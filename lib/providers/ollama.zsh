@@ -55,9 +55,9 @@ EOF
             # Check for error message
             local error=$(echo "$response" | jq -r '.error // empty' 2>/dev/null)
             if [[ -n "$error" ]]; then
-                echo "Ollama Error: $error"
+                echo "Error: $error"
             else
-                echo "Error: Unable to parse Ollama response"
+                echo "Error: Unable to parse response"
             fi
             return 1
         fi

@@ -66,7 +66,7 @@ EOF
             # Check for error message
             local error=$(echo "$response" | jq -r '.error.message // empty' 2>/dev/null)
             if [[ -n "$error" ]]; then
-                echo "API Error: $error"
+                echo "Error: $error"
             else
                 echo "Error: Unable to parse response"
             fi

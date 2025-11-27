@@ -47,7 +47,7 @@ _zsh_ai_accept_line() {
         # Get the response
         local cmd=$(cat "$tmpfile")
         
-        if [[ -n "$cmd" ]] && [[ "$cmd" != "Error:"* ]] && [[ "$cmd" != "API Error:"* ]]; then
+        if [[ -n "$cmd" ]] && [[ "$cmd" != "Error:"* ]]; then
             # Simply replace the buffer with the generated command
             BUFFER="$cmd"
 

@@ -93,11 +93,10 @@ _zsh_ai_execute_command() {
     local query="$1"
     local cmd=$(_zsh_ai_query "$query")
     
-    if [[ -n "$cmd" ]] && [[ "$cmd" != "Error:"* ]] && [[ "$cmd" != "API Error:"* ]]; then
+    if [[ -n "$cmd" ]] && [[ "$cmd" != "Error:"* ]]; then
         echo "$cmd"
         return 0
     else
-        # Return error
         echo "$cmd"
         return 1
     fi
@@ -152,7 +151,7 @@ zsh-ai() {
     local exit_code=$?
     local cmd=$(cat "$tmpfile")
     
-    if [[ $exit_code -eq 0 ]] && [[ -n "$cmd" ]] && [[ "$cmd" != "Error:"* ]] && [[ "$cmd" != "API Error:"* ]]; then
+    if [[ $exit_code -eq 0 ]] && [[ -n "$cmd" ]] && [[ "$cmd" != "Error:"* ]]; then
         # Put the command in the ZLE buffer (same as # method)
         print -z "$cmd"
     else
