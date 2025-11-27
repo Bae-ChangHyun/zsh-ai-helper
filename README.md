@@ -152,3 +152,7 @@ prompt_extend: |
 - **[Installation & Setup](INSTALL.md)** - Detailed installation instructions
 - **[Configuration](INSTALL.md#configuration-options)** - API keys, providers, and customization options
 - **[Contributing](CONTRIBUTING.md)** - Help make zsh-ai better!
+
+### 한국어 문서 (Korean)
+- **[README 한국어](docs/README.ko.md)**
+- **[설치 가이드](docs/INSTALL.ko.md)**
