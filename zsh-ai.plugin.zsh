@@ -4,7 +4,9 @@
 # Supports Anthropic Claude, Google Gemini, OpenAI, and local Ollama models
 
 # Get the directory where this plugin is installed
-local plugin_dir="${0:A:h}"
+# Export as ZSH_AI_PLUGIN_DIR for use in config.zsh .env loading
+export ZSH_AI_PLUGIN_DIR="${0:A:h}"
+local plugin_dir="$ZSH_AI_PLUGIN_DIR"
 
 # Source all the module files
 source "${plugin_dir}/lib/config.zsh"

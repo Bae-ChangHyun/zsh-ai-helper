@@ -40,6 +40,8 @@ _zsh_ai_query_openai() {
 }
 EOF
 )
+    # Merge extra kwargs if provided
+    json_payload=$(_zsh_ai_merge_extra_kwargs "$json_payload")
     
     # Call the API
     response=$(curl -s ${ZSH_AI_OPENAI_URL} \

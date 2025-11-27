@@ -75,6 +75,28 @@ echo "source ~/.zsh-ai/zsh-ai.plugin.zsh" >> ~/.zshrc
 
 ### Setup
 
+You can configure zsh-ai using either a `.env` file (recommended) or environment variables in your `~/.zshrc`.
+
+#### Option A: Using .env file (Recommended)
+
+1. Copy the example file:
+```bash
+cp ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-ai/.env.example ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-ai/.env
+```
+
+2. Edit the `.env` file with your settings:
+```bash
+# Example for OpenAI
+ZSH_AI_PROVIDER="openai"
+OPENAI_API_KEY="your-api-key-here"
+```
+
+The plugin automatically loads `.env` from:
+- Plugin directory (priority)
+- `~/.zsh-ai.env` (alternative location)
+
+#### Option B: Using environment variables
+
 **Option 1: Anthropic Claude (default)**
 ```bash
 export ANTHROPIC_API_KEY="your-api-key-here"
@@ -115,6 +137,8 @@ export ZSH_AI_OPENAI_MODEL="llama-3.1-sonar-small-128k-online"
 
 Add to your `~/.zshrc` to make it permanent.
 
+**Note:** You only need to set the API key for your chosen provider. The plugin will not warn about missing API keys for other providers.
+
 ### Configuration
 
 All configuration is done via environment variables with sensible defaults:
@@ -141,6 +165,10 @@ export ZSH_AI_OLLAMA_URL="http://localhost:11434"  # (default)
 # Advanced: Extend the AI prompt with custom instructions
 # This adds to the existing prompt without replacing it
 export ZSH_AI_PROMPT_EXTEND="Always prefer modern CLI tools like ripgrep, fd, and bat."
+
+# Advanced: Extra kwargs for LLM API calls (JSON format)
+# Override temperature, add top_p, etc.
+export ZSH_AI_EXTRA_KWARGS='{"temperature": 0.1}'
 ```
 
 **That's it!** Most users won't need to change anything.

@@ -29,6 +29,8 @@ _zsh_ai_query_anthropic() {
 }
 EOF
 )
+    # Merge extra kwargs if provided
+    json_payload=$(_zsh_ai_merge_extra_kwargs "$json_payload")
     
     # Call the API
     response=$(curl -s https://api.anthropic.com/v1/messages \

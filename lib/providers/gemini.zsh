@@ -44,6 +44,8 @@ _zsh_ai_query_gemini() {
 }
 EOF
 )
+    # Merge extra kwargs if provided
+    json_payload=$(_zsh_ai_merge_extra_kwargs "$json_payload")
     
     # Call the API
     response=$(curl -s "https://generativelanguage.googleapis.com/v1beta/models/${ZSH_AI_GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}" \

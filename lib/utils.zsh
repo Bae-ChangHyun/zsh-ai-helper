@@ -21,6 +21,35 @@ _zsh_ai_escape_json() {
     printf '%s' "$1" | perl -0777 -pe 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g; s/\r/\\r/g; s/\n/\\n/g; s/\f/\\f/g; s/\x08/\\b/g; s/[\x00-\x07\x0B\x0E-\x1F]//g'
 }
 
+# Function to merge extra kwargs into JSON payload
+# Takes base JSON and merges ZSH_AI_EXTRA_KWARGS into it
+_zsh_ai_merge_extra_kwargs() {
+    local base_json="$1"
+
+    # If no extra kwargs, return base JSON as-is
+    if [[ -z "$ZSH_AI_EXTRA_KWARGS" ]]; then
+        printf '%s' "$base_json"
+        return
+    fi
+
+    # Use jq if available for proper JSON merge
+    # Use -c for compact output to preserve escaped characters
+    if command -v jq &> /dev/null; then
+        printf '%s' "$base_json" | jq -c --argjson extra "$ZSH_AI_EXTRA_KWARGS" '. * $extra' 2>/dev/null || printf '%s' "$base_json"
+    else
+        # Fallback: simple string manipulation for common cases
+        # Remove trailing } from base, add extra kwargs
+        local extra_cleaned="${ZSH_AI_EXTRA_KWARGS#\{}"
+        extra_cleaned="${extra_cleaned%\}}"
+        if [[ -n "$extra_cleaned" ]]; then
+            # Insert extra kwargs before the last }
+            printf '%s' "${base_json%\}}, ${extra_cleaned}}"
+        else
+            printf '%s' "$base_json"
+        fi
+    fi
+}
+
 # Main query function that routes to the appropriate provider
 _zsh_ai_query() {
     local query="$1"
