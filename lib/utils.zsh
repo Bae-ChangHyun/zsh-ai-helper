@@ -21,6 +21,16 @@ _zsh_ai_escape_json() {
     printf '%s' "$1" | perl -0777 -pe 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g; s/\r/\\r/g; s/\n/\\n/g; s/\f/\\f/g; s/\x08/\\b/g; s/[\x00-\x07\x0B\x0E-\x1F]//g'
 }
 
+# Validate JSON string
+_zsh_ai_validate_json() {
+    local json="$1"
+    if command -v jq &> /dev/null; then
+        echo "$json" | jq . >/dev/null 2>&1
+        return $?
+    fi
+    return 0  # Skip validation if jq not available
+}
+
 # Function to merge extra kwargs into JSON payload
 # Takes base JSON and merges ZSH_AI_EXTRA_KWARGS into it
 _zsh_ai_merge_extra_kwargs() {
@@ -28,6 +38,13 @@ _zsh_ai_merge_extra_kwargs() {
 
     # If no extra kwargs, return base JSON as-is
     if [[ -z "$ZSH_AI_EXTRA_KWARGS" ]]; then
+        printf '%s' "$base_json"
+        return
+    fi
+
+    # Validate extra kwargs JSON before using
+    if ! _zsh_ai_validate_json "$ZSH_AI_EXTRA_KWARGS"; then
+        echo "Warning: ZSH_AI_EXTRA_KWARGS is not valid JSON, ignoring" >&2
         printf '%s' "$base_json"
         return
     fi
