@@ -69,6 +69,47 @@ _zsh_ai_merge_extra_kwargs() {
     fi
 }
 
+# System prompt for explaining commands
+_zsh_ai_get_explain_prompt() {
+    echo "You are a shell command explainer. Given a shell command, provide a brief, clear explanation of what it does.\n\nIMPORTANT RULES:\n1. Output ONLY the explanation text - no markdown, no backticks, no formatting\n2. Keep it concise (1-2 sentences maximum)\n3. Focus on what the command does, not how to use it\n4. Use simple, clear language\n\nExample:\nCommand: find . -name '*.txt' -mtime -1\nExplanation: Finds all .txt files in current directory modified within the last day"
+}
+
+# Function to get explanation for a command via second LLM call
+_zsh_ai_explain_command() {
+    local cmd="$1"
+    local explanation
+
+    # Build a simple query for explanation
+    local explain_query="Command: $cmd\nExplanation:"
+
+    # Temporarily override the system prompt for explanation
+    local original_prompt="$ZSH_AI_SYSTEM_PROMPT"
+    export ZSH_AI_SYSTEM_PROMPT=$(_zsh_ai_get_explain_prompt)
+
+    # Query the LLM for explanation
+    explanation=$(_zsh_ai_query "$explain_query")
+
+    # Restore original prompt
+    if [[ -n "$original_prompt" ]]; then
+        export ZSH_AI_SYSTEM_PROMPT="$original_prompt"
+    else
+        unset ZSH_AI_SYSTEM_PROMPT
+    fi
+
+    # Return explanation (clean up any leading/trailing whitespace)
+    echo "$explanation" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
+}
+
+# Function to format command with explanation as comment
+_zsh_ai_format_with_explanation() {
+    local cmd="$1"
+    local explanation="$2"
+
+    # Format: # explanation\ncommand
+    echo "# $explanation"
+    echo "$cmd"
+}
+
 # Main query function that routes to the appropriate provider
 _zsh_ai_query() {
     local query="$1"
@@ -95,13 +136,51 @@ _zsh_ai_query() {
     fi
 }
 
+# Parse query for --e flag
+# Returns: sets _ZSH_AI_EXPLAIN_FLAG and _ZSH_AI_CLEAN_QUERY
+_zsh_ai_parse_query() {
+    local query="$1"
+    _ZSH_AI_EXPLAIN_FLAG=0
+    _ZSH_AI_CLEAN_QUERY="$query"
+
+    # Check for --e flag at the end of query
+    if [[ "$query" == *" --e" ]]; then
+        _ZSH_AI_EXPLAIN_FLAG=1
+        _ZSH_AI_CLEAN_QUERY="${query% --e}"
+    elif [[ "$query" == *"--e" ]]; then
+        _ZSH_AI_EXPLAIN_FLAG=1
+        _ZSH_AI_CLEAN_QUERY="${query%--e}"
+    fi
+
+    # Trim trailing whitespace from clean query
+    _ZSH_AI_CLEAN_QUERY="${_ZSH_AI_CLEAN_QUERY%"${_ZSH_AI_CLEAN_QUERY##*[![:space:]]}"}"
+}
+
 # Shared function to handle AI command execution
 _zsh_ai_execute_command() {
     local query="$1"
-    local cmd=$(_zsh_ai_query "$query")
-    
+
+    # Parse query for flags
+    _zsh_ai_parse_query "$query"
+    local explain_flag=$_ZSH_AI_EXPLAIN_FLAG
+    local clean_query="$_ZSH_AI_CLEAN_QUERY"
+
+    # Get the command from LLM
+    local cmd=$(_zsh_ai_query "$clean_query")
+
     if [[ -n "$cmd" ]] && [[ "$cmd" != "Error:"* ]]; then
-        echo "$cmd"
+        # If --e flag was set, get explanation and format output
+        if [[ $explain_flag -eq 1 ]]; then
+            local explanation=$(_zsh_ai_explain_command "$cmd")
+            if [[ -n "$explanation" ]] && [[ "$explanation" != "Error:"* ]]; then
+                _zsh_ai_format_with_explanation "$cmd" "$explanation"
+            else
+                # If explanation failed, just return the command
+                echo "$cmd"
+            fi
+        else
+            echo "$cmd"
+        fi
         return 0
     else
         echo "$cmd"
@@ -112,8 +191,14 @@ _zsh_ai_execute_command() {
 # Optional: Add a helper function for users who prefer explicit commands
 zsh-ai() {
     if [[ $# -eq 0 ]]; then
-        echo "Usage: zsh-ai \"your natural language command\""
-        echo "Example: zsh-ai \"find all python files modified today\""
+        echo "Usage: zsh-ai \"your natural language command\" [--e]"
+        echo ""
+        echo "Options:"
+        echo "  --e    Add explanation comment above the generated command"
+        echo ""
+        echo "Examples:"
+        echo "  zsh-ai \"find all python files modified today\""
+        echo "  zsh-ai \"list large files\" --e"
         echo ""
         echo "Current provider: $ZSH_AI_PROVIDER"
         if [[ "$ZSH_AI_PROVIDER" == "ollama" ]]; then
