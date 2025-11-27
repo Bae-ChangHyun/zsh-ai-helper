@@ -3,9 +3,45 @@
 # Ollama API provider for zsh-ai
 
 # Function to check if Ollama is running
+# Returns 0 if running, 1 if not
+# Sets ZSH_AI_OLLAMA_CHECK_ERROR with detailed error message
 _zsh_ai_check_ollama() {
-    curl -s --max-time 5 "${ZSH_AI_OLLAMA_URL}/api/tags" >/dev/null 2>&1
-    return $?
+    local response
+    local curl_exit_code
+
+    # Try to connect to Ollama API
+    response=$(curl -s --max-time 5 --connect-timeout 3 -w "\n%{http_code}" "${ZSH_AI_OLLAMA_URL}/api/tags" 2>&1)
+    curl_exit_code=$?
+
+    # Check curl exit code for connection errors
+    if [[ $curl_exit_code -ne 0 ]]; then
+        case $curl_exit_code in
+            6)
+                ZSH_AI_OLLAMA_CHECK_ERROR="Could not resolve host. Check ZSH_AI_OLLAMA_URL setting."
+                ;;
+            7)
+                ZSH_AI_OLLAMA_CHECK_ERROR="Connection refused at ${ZSH_AI_OLLAMA_URL}. Is Ollama running?"
+                ;;
+            28)
+                ZSH_AI_OLLAMA_CHECK_ERROR="Connection timed out. Ollama may be starting up or unresponsive."
+                ;;
+            *)
+                ZSH_AI_OLLAMA_CHECK_ERROR="Connection failed (curl error $curl_exit_code)."
+                ;;
+        esac
+        return 1
+    fi
+
+    # Extract HTTP status code (last line)
+    local http_code="${response##*$'\n'}"
+
+    # Check HTTP status
+    if [[ "$http_code" != "200" ]]; then
+        ZSH_AI_OLLAMA_CHECK_ERROR="Ollama returned HTTP $http_code. Server may be misconfigured."
+        return 1
+    fi
+
+    return 0
 }
 
 # Function to call Ollama API
