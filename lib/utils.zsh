@@ -111,12 +111,13 @@ zsh-ai() {
     
     # Create a temp file for the response
     local tmpfile=$(mktemp)
-    
+    trap "rm -f '$tmpfile'" RETURN INT TERM
+
     # Disable job control notifications (same as widget)
     setopt local_options no_monitor no_notify
-    
+
     # Start the API query in background
-    (_zsh_ai_execute_command "$query" > "$tmpfile" 2>/dev/null) &
+    (_zsh_ai_execute_command "$query" > "$tmpfile" 2>&1) &
     local pid=$!
     
     # Animate while waiting
@@ -133,7 +134,6 @@ zsh-ai() {
     wait $pid
     local exit_code=$?
     local cmd=$(cat "$tmpfile")
-    rm -f "$tmpfile"
     
     if [[ $exit_code -eq 0 ]] && [[ -n "$cmd" ]] && [[ "$cmd" != "Error:"* ]] && [[ "$cmd" != "API Error:"* ]]; then
         # Put the command in the ZLE buffer (same as # method)
