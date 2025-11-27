@@ -65,16 +65,44 @@ $ for img in *.{jpg,png}; do convert "$img" -quality 85 "$img"; done
    # Homebrew (recommended)
    brew tap matheusml/zsh-ai && brew install zsh-ai
    ```
-   
-2. **Configure** - Set up your AI provider (Anthropic, Gemini, or Ollama)
+
+2. **Configure** - Set up your AI provider using `.env` file:
+   ```bash
+   # Copy the example config
+   cp .env.example .env
+
+   # Edit with your settings
+   ZSH_AI_PROVIDER="openai"
+   OPENAI_API_KEY="your-api-key"
+   ```
 
 3. **Use** - Type `# your command` and press Enter!
 
 📚 **[Full Installation Guide →](INSTALL.md)**
 
+## Configuration
+
+All settings can be managed via `.env` file in the plugin directory:
+
+```bash
+# Provider: "anthropic", "gemini", "openai", or "ollama"
+ZSH_AI_PROVIDER="openai"
+
+# API Keys (only set for your chosen provider)
+OPENAI_API_KEY="your-key"
+
+# Custom API endpoint (for self-hosted or compatible APIs)
+ZSH_AI_OPENAI_URL="https://api.openai.com/v1/chat/completions"
+
+# Extra parameters for LLM API calls (JSON format)
+ZSH_AI_EXTRA_KWARGS='{"temperature": 0.1}'
+```
+
+📚 **[Full Configuration Guide →](INSTALL.md#configuration)**
+
 ## Documentation
 
 - 📦 **[Installation & Setup](INSTALL.md)** - Detailed installation instructions for all package managers
-- 🔧 **[Configuration](INSTALL.md#configuration)** - API keys, providers, and customization options  
+- 🔧 **[Configuration](INSTALL.md#configuration)** - API keys, providers, and customization options
 - 🚨 **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
 - 🤝 **[Contributing](CONTRIBUTING.md)** - Help make zsh-ai better!
