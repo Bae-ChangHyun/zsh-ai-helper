@@ -57,7 +57,11 @@ EOF
             if [[ -n "$error" ]]; then
                 echo "Error: $error"
             else
-                echo "Error: Unable to parse response"
+                # Show truncated response for debugging
+                local preview="${response:0:200}"
+                [[ ${#response} -gt 200 ]] && preview="${preview}..."
+                echo "Error: Failed to parse API response"
+                echo "Response preview: $preview"
             fi
             return 1
         fi
@@ -77,10 +81,22 @@ EOF
         fi
         
         if [[ -z "$result" ]]; then
-            echo "Error: Unable to parse response (install jq for better reliability)"
+            # Check for API error in response
+            if [[ "$response" == *'"error"'* ]]; then
+                local error_msg=$(echo "$response" | sed -n 's/.*"error":"\([^"]*\)".*/\1/p' | head -1)
+                if [[ -n "$error_msg" ]]; then
+                    echo "Error: $error_msg"
+                    return 1
+                fi
+            fi
+            # Show truncated response for debugging
+            local preview="${response:0:200}"
+            [[ ${#response} -gt 200 ]] && preview="${preview}..."
+            echo "Error: Failed to parse API response (install jq for better reliability)"
+            echo "Response preview: $preview"
             return 1
         fi
-        
+
         # Unescape JSON string (handle \n, \t, etc.) and clean up
         result=$(echo "$result" | sed 's/\\n/\n/g; s/\\t/\t/g; s/\\r/\r/g; s/\\"/"/g; s/\\\\/\\/g')
         # Remove trailing newlines and spaces
