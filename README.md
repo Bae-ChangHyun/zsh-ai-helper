@@ -97,9 +97,43 @@ Type `# your command` and press Enter!
 **[Full Installation Guide](INSTALL.md)**
 
 
+## Configuration
+
+### Custom Prefix
+
+Don't like `#`? Change it in your `.env` file:
+
+```bash
+# Use "? " as prefix
+ZSH_AI_PREFIX="? "
+# Now type: ? find all python files
+
+# Use "ai " as prefix
+ZSH_AI_PREFIX="ai "
+# Now type: ai find all python files
+
+# Use ">> " as prefix
+ZSH_AI_PREFIX=">> "
+# Now type: >> find all python files
+```
+
+### Custom Prompt
+
+Edit `prompt.yaml` in the plugin directory to customize AI behavior:
+
+```yaml
+system_prompt: |
+  Your custom prompt here...
+
+prompt_extend: |
+  Additional instructions...
+```
+
+**[Full Configuration Guide](INSTALL.md#configuration-options)**
+
+
 ## Documentation
 
-- **[Installation & Setup](INSTALL.md)** - Detailed installation instructions for all package managers
-- **[Configuration](INSTALL.md#configuration)** - API keys, providers, and customization options
-- **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Installation & Setup](INSTALL.md)** - Detailed installation instructions
+- **[Configuration](INSTALL.md#configuration-options)** - API keys, providers, and customization options
 - **[Contributing](CONTRIBUTING.md)** - Help make zsh-ai better!
