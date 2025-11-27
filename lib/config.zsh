@@ -95,6 +95,7 @@ _zsh_ai_load_prompt
 : ${ZSH_AI_ANTHROPIC_MODEL:="claude-haiku-4-5"}
 : ${ZSH_AI_TIMEOUT:=30}
 : ${ZSH_AI_PREFIX:="# "}
+: ${ZSH_AI_LANG:="EN"}
 
 # Provider validation
 _zsh_ai_validate_config() {

@@ -69,9 +69,38 @@ _zsh_ai_merge_extra_kwargs() {
     fi
 }
 
+# Get language instruction for explanation prompt
+_zsh_ai_get_lang_instruction() {
+    local lang="${ZSH_AI_LANG:-EN}"
+    case "$lang" in
+        KO|ko)
+            echo "You MUST respond in Korean (한국어)."
+            ;;
+        JA|ja)
+            echo "You MUST respond in Japanese (日本語)."
+            ;;
+        ZH|zh)
+            echo "You MUST respond in Chinese (中文)."
+            ;;
+        DE|de)
+            echo "You MUST respond in German (Deutsch)."
+            ;;
+        FR|fr)
+            echo "You MUST respond in French (Français)."
+            ;;
+        ES|es)
+            echo "You MUST respond in Spanish (Español)."
+            ;;
+        *)
+            echo "You MUST respond in English."
+            ;;
+    esac
+}
+
 # System prompt for explaining commands
 _zsh_ai_get_explain_prompt() {
-    echo "You are a shell command explainer. Given a shell command, provide a brief, clear explanation of what it does.\n\nIMPORTANT RULES:\n1. Output ONLY the explanation text - no markdown, no backticks, no formatting\n2. Keep it concise (1-2 sentences maximum)\n3. Focus on what the command does, not how to use it\n4. Use simple, clear language\n\nExample:\nCommand: find . -name '*.txt' -mtime -1\nExplanation: Finds all .txt files in current directory modified within the last day"
+    local lang_instruction=$(_zsh_ai_get_lang_instruction)
+    echo "You are a shell command explainer. Given a shell command, provide a brief, clear explanation of what it does.\n\n${lang_instruction}\n\nIMPORTANT RULES:\n1. Output ONLY the explanation text - no markdown, no backticks, no formatting\n2. Keep it concise (1-2 sentences maximum)\n3. Focus on what the command does, not how to use it\n4. Use simple, clear language\n\nExample:\nCommand: find . -name '*.txt' -mtime -1\nExplanation: Finds all .txt files in current directory modified within the last day"
 }
 
 # Function to get explanation for a command via second LLM call
