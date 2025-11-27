@@ -20,3 +20,13 @@ system_prompt: |
 # prompt_extend: |
 #   Always prefer modern CLI tools like ripgrep, fd, and bat.
 #   Use verbose flags when available.
+
+# Optional: Custom prompt for --e flag (command explanation)
+# If not set, uses default explanation prompt
+# explain_prompt: |
+#   You are a shell command explainer. Given a shell command, provide a brief explanation.
+#
+#   RULES:
+#   1. Output ONLY the explanation text - no markdown, no formatting
+#   2. Keep it concise (1-2 sentences)
+#   3. Focus on what the command does

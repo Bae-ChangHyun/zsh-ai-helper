@@ -100,7 +100,13 @@ _zsh_ai_get_lang_instruction() {
 # System prompt for explaining commands
 _zsh_ai_get_explain_prompt() {
     local lang_instruction=$(_zsh_ai_get_lang_instruction)
-    echo "You are a shell command explainer. Given a shell command, provide a brief, clear explanation of what it does.\n\n${lang_instruction}\n\nIMPORTANT RULES:\n1. Output ONLY the explanation text - no markdown, no backticks, no formatting\n2. Keep it concise (1-2 sentences maximum)\n3. Focus on what the command does, not how to use it\n4. Use simple, clear language\n\nExample:\nCommand: find . -name '*.txt' -mtime -1\nExplanation: Finds all .txt files in current directory modified within the last day"
+    local default_prompt="You are a shell command explainer. Given a shell command, provide a brief, clear explanation of what it does.\n\nIMPORTANT RULES:\n1. Output ONLY the explanation text - no markdown, no backticks, no formatting\n2. Keep it concise (1-2 sentences maximum)\n3. Focus on what the command does, not how to use it\n4. Use simple, clear language\n\nExample:\nCommand: find . -name '*.txt' -mtime -1\nExplanation: Finds all .txt files in current directory modified within the last day"
+
+    # Use custom prompt from YAML if available, otherwise use default
+    local base_prompt="${ZSH_AI_EXPLAIN_PROMPT:-$default_prompt}"
+
+    # Always prepend language instruction
+    echo "${lang_instruction}\n\n${base_prompt}"
 }
 
 # Function to get explanation for a command via second LLM call
