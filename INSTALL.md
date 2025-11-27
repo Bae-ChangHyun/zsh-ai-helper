@@ -54,6 +54,26 @@ The plugin automatically loads `.env` from:
 **Note:** You need to set the API key for your chosen provider.
 
 
+## Usage Options
+
+### Command Explanation (--e flag)
+
+Add `--e` at the end of your query to get an explanation comment above the generated command:
+
+```bash
+# Using comment syntax
+$ # find large files --e
+$ # Finds files larger than 100MB in the current directory recursively
+$ find . -type f -size +100M
+
+# Using direct command
+$ zsh-ai "compress all images" --e
+$ # Compresses all jpg and png images in current directory to 85% quality
+$ for img in *.{jpg,png}; do convert "$img" -quality 85 "$img"; done
+```
+
+This makes a second API call to explain the command - useful for learning or documenting scripts.
+
 ## Configuration Options
 
 All settings in `.env` file:
