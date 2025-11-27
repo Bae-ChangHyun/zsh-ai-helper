@@ -61,19 +61,17 @@ $ for img in *.{jpg,png}; do convert "$img" -quality 85 "$img"; done
 ---
 
 ### Command Explanation (--e flag)
-Add `--e` at the end of your query to get an explanation comment above the generated command.
+Add `--e` at the end of your query to get an inline explanation comment with the generated command.
 
 ```bash
 $ # find large files --e
-$ # Finds files larger than 100MB in the current directory recursively
-$ find . -type f -size +100M
+$ find . -type f -size +100M  # Finds files larger than 100MB recursively
 
 $ zsh-ai "list all running docker containers" --e
-$ # Lists all Docker containers currently running with detailed information
-$ docker ps
+$ docker ps  # Lists all running Docker containers with details
 ```
 
-This makes a second API call to explain what the command does - useful for learning or documenting scripts.
+This makes a second API call to explain what the command does - useful for learning or documenting scripts. The explanation appears as an inline comment that is ignored when executed.
 
 ## Quick Start
 

@@ -58,21 +58,19 @@ The plugin automatically loads `.env` from:
 
 ### Command Explanation (--e flag)
 
-Add `--e` at the end of your query to get an explanation comment above the generated command:
+Add `--e` at the end of your query to get an inline explanation comment with the generated command:
 
 ```bash
 # Using comment syntax
 $ # find large files --e
-$ # Finds files larger than 100MB in the current directory recursively
-$ find . -type f -size +100M
+$ find . -type f -size +100M  # Finds files larger than 100MB recursively
 
 # Using direct command
 $ zsh-ai "compress all images" --e
-$ # Compresses all jpg and png images in current directory to 85% quality
-$ for img in *.{jpg,png}; do convert "$img" -quality 85 "$img"; done
+$ for img in *.{jpg,png}; do convert "$img" -quality 85 "$img"; done  # Compresses images to 85% quality
 ```
 
-This makes a second API call to explain the command - useful for learning or documenting scripts.
+This makes a second API call to explain the command - useful for learning or documenting scripts. The explanation appears as an inline comment that is ignored when executed.
 
 ## Configuration Options
 

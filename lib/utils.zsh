@@ -100,14 +100,15 @@ _zsh_ai_explain_command() {
     echo "$explanation" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
 }
 
-# Function to format command with explanation as comment
+# Function to format command with explanation as inline comment
 _zsh_ai_format_with_explanation() {
     local cmd="$1"
     local explanation="$2"
 
-    # Format: # explanation\ncommand
-    echo "# $explanation"
-    echo "$cmd"
+    # Format: command  # explanation (inline comment)
+    # This avoids infinite loop when ZSH_AI_PREFIX starts with #
+    # The # after command is treated as shell comment and ignored during execution
+    echo "$cmd  # $explanation"
 }
 
 # Main query function that routes to the appropriate provider
