@@ -60,60 +60,42 @@ $ for img in *.{jpg,png}; do convert "$img" -quality 85 "$img"; done
 
 ## Quick Start
 
-1. **Install** - Choose your preferred method:
-   ```bash
-   # Homebrew (recommended)
-   brew tap matheusml/zsh-ai && brew install zsh-ai
-   ```
+### 1. Install (Oh My Zsh)
 
-2. **Configure** - Set up your AI provider using `.env` file:
-   ```bash
-   # Copy the example config
-   cp .env.example .env
+```bash
+git clone https://github.com/matheusml/zsh-ai ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-ai
+```
 
-   # Edit with your settings
-   ZSH_AI_PROVIDER="openai"
-   OPENAI_API_KEY="your-api-key"
-   ```
+Add to your `~/.zshrc`:
+```bash
+plugins=(
+    # other plugins...
+    zsh-ai
+)
+```
 
-3. **Use** - Type `# your command` and press Enter!
+### 2. Configure
+
+```bash
+# Copy the example config
+cp ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-ai/.env.example \
+   ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-ai/.env
+
+# Edit .env with your settings
+# ZSH_AI_PROVIDER="openai"
+# OPENAI_API_KEY="your-api-key"
+```
+
+### 3. Reload & Use
+
+```bash
+source ~/.zshrc
+```
+
+Type `# your command` and press Enter!
 
 **[Full Installation Guide](INSTALL.md)**
 
-## Configuration
-
-All settings are managed via `.env` file in the plugin directory:
-
-```bash
-# Provider: "anthropic", "gemini", "openai", or "ollama"
-ZSH_AI_PROVIDER="openai"
-
-# API Keys (only set for your chosen provider)
-OPENAI_API_KEY="your-key"
-
-# Custom API endpoint (for self-hosted or compatible APIs)
-ZSH_AI_OPENAI_URL="https://api.openai.com/v1/chat/completions"
-
-# Request timeout (seconds)
-ZSH_AI_TIMEOUT=30
-
-# Extra parameters for LLM API calls (JSON format)
-ZSH_AI_EXTRA_KWARGS='{"temperature": 0.1}'
-```
-
-**[Full Configuration Guide](INSTALL.md#configuration)**
-
-## Customizing the Prompt
-
-Edit `prompt.yaml` in the plugin directory to customize the AI behavior:
-
-```yaml
-system_prompt: |
-  Your custom prompt here...
-
-prompt_extend: |
-  Additional instructions...
-```
 
 ## Documentation
 
