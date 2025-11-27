@@ -53,6 +53,7 @@ _zsh_ai_load_env
 : ${ZSH_AI_OPENAI_MODEL:="gpt-4o"}  # Default to GPT-4o
 : ${ZSH_AI_OPENAI_URL:="https://api.openai.com/v1/chat/completions"}  # Default to OpenAI
 : ${ZSH_AI_ANTHROPIC_MODEL:="claude-haiku-4-5"}  # Default Anthropic model
+: ${ZSH_AI_TIMEOUT:=30}  # API timeout in seconds
 
 # Optional: Extend the system prompt with custom instructions
 # ZSH_AI_PROMPT_EXTEND - Add custom instructions to the AI prompt without replacing the core prompt

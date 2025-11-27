@@ -33,7 +33,8 @@ EOF
     json_payload=$(_zsh_ai_merge_extra_kwargs "$json_payload")
     
     # Call the API
-    response=$(curl -s https://api.anthropic.com/v1/messages \
+    response=$(curl -s --max-time "$ZSH_AI_TIMEOUT" --connect-timeout 10 \
+        https://api.anthropic.com/v1/messages \
         --header "x-api-key: $ANTHROPIC_API_KEY" \
         --header "anthropic-version: 2023-06-01" \
         --header "content-type: application/json" \

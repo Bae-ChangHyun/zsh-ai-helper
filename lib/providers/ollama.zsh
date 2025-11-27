@@ -4,7 +4,7 @@
 
 # Function to check if Ollama is running
 _zsh_ai_check_ollama() {
-    curl -s "${ZSH_AI_OLLAMA_URL}/api/tags" >/dev/null 2>&1
+    curl -s --max-time 5 "${ZSH_AI_OLLAMA_URL}/api/tags" >/dev/null 2>&1
     return $?
 }
 
@@ -38,7 +38,8 @@ EOF
     json_payload=$(_zsh_ai_merge_extra_kwargs "$json_payload")
     
     # Call the API
-    response=$(curl -s "${ZSH_AI_OLLAMA_URL}/api/generate" \
+    response=$(curl -s --max-time "$ZSH_AI_TIMEOUT" --connect-timeout 10 \
+        "${ZSH_AI_OLLAMA_URL}/api/generate" \
         --header "content-type: application/json" \
         --data "$json_payload")
     
