@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- ✅ zsh 5.0+ (you probably already have this)
-- ✅ `curl` (already on macOS/Linux)
-- ➕ `jq` (optional, for better reliability)
+- zsh 5.0+ (you probably already have this)
+- `curl` (already on macOS/Linux)
+- `jq` (optional, for better reliability)
 
 **Choose your AI provider:**
 - **Anthropic Claude** (default): [Get API key](https://console.anthropic.com/account/keys)
@@ -51,7 +51,7 @@ git clone https://github.com/matheusml/zsh-ai ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}
 2. Add `zsh-ai` to your plugins list in `~/.zshrc`:
 
 ```bash
-plugins=( 
+plugins=(
     # other plugins...
     zsh-ai
 )
@@ -73,127 +73,115 @@ echo "source ~/.zsh-ai/zsh-ai.plugin.zsh" >> ~/.zshrc
 
 3. Start a new terminal session.
 
-### Setup
+## Setup
 
-You can configure zsh-ai using either a `.env` file (recommended) or environment variables in your `~/.zshrc`.
-
-#### Option A: Using .env file (Recommended)
+Configure zsh-ai using a `.env` file:
 
 1. Copy the example file:
 ```bash
+# For Oh My Zsh installation
 cp ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-ai/.env.example ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-ai/.env
+
+# For manual installation
+cp ~/.zsh-ai/.env.example ~/.zsh-ai/.env
 ```
 
 2. Edit the `.env` file with your settings:
 ```bash
+# Example for Anthropic (default)
+ZSH_AI_PROVIDER="anthropic"
+ANTHROPIC_API_KEY="your-api-key-here"
+
 # Example for OpenAI
 ZSH_AI_PROVIDER="openai"
 OPENAI_API_KEY="your-api-key-here"
+
+# Example for Gemini
+ZSH_AI_PROVIDER="gemini"
+GEMINI_API_KEY="your-api-key-here"
+
+# Example for Ollama (local, no API key needed)
+ZSH_AI_PROVIDER="ollama"
+
+# Example for Perplexity (uses OpenAI-compatible API)
+ZSH_AI_PROVIDER="openai"
+OPENAI_API_KEY="pplx-your-api-key"
+ZSH_AI_OPENAI_URL="https://api.perplexity.ai/chat/completions"
+ZSH_AI_OPENAI_MODEL="llama-3.1-sonar-small-128k-online"
 ```
 
 The plugin automatically loads `.env` from:
 - Plugin directory (priority)
 - `~/.zsh-ai.env` (alternative location)
 
-#### Option B: Using environment variables
+**Note:** You only need to set the API key for your chosen provider.
 
-**Option 1: Anthropic Claude (default)**
-```bash
-export ANTHROPIC_API_KEY="your-api-key-here"
-```
+## Configuration
 
-**Option 2: Google Gemini**
-```bash
-export GEMINI_API_KEY="your-api-key-here"
-export ZSH_AI_PROVIDER="gemini"
-```
-
-**Option 3: OpenAI**
-```bash
-export OPENAI_API_KEY="your-api-key-here"
-export ZSH_AI_PROVIDER="openai"
-# Optional: Change model (default is gpt-4o)
-export ZSH_AI_OPENAI_MODEL="gpt-4o-mini"
-# Optional: Change URL (default is https://api.openai.com/v1/chat/completions)
-export ZSH_AI_OPENAI_URL="https://<your-openai>/v1/chat/completions"
-```
-
-**Option 4: Ollama (local models)**
-```bash
-# Run a model (e.g., 3.2)
-ollama run llama3.2
-
-# Configure zsh-ai to use Ollama
-export ZSH_AI_PROVIDER="ollama"
-```
-
-**Option 5: Perplexity**
-```bash
-export OPENAI_API_KEY="pplx-your-api-key"
-export ZSH_AI_PROVIDER="openai"
-export ZSH_AI_OPENAI_URL="https://api.perplexity.ai/chat/completions"
-export ZSH_AI_OPENAI_MODEL="llama-3.1-sonar-small-128k-online"
-```
-
-Add to your `~/.zshrc` to make it permanent.
-
-**Note:** You only need to set the API key for your chosen provider. The plugin will not warn about missing API keys for other providers.
-
-### Configuration
-
-All configuration is done via environment variables with sensible defaults:
+All configuration is managed via `.env` file:
 
 ```bash
-# Choose AI provider: "anthropic" (default), "gemini", "openai", or "ollama"
-export ZSH_AI_PROVIDER="anthropic"
+# =============================================================================
+# Provider Selection
+# =============================================================================
+# Options: "anthropic" (default), "gemini", "openai", "ollama"
+ZSH_AI_PROVIDER="anthropic"
 
-# Anthropic-specific settings
-export ZSH_AI_ANTHROPIC_MODEL="claude-3-5-sonnet-20241022"  # (default)
+# =============================================================================
+# API Keys (only set for your chosen provider)
+# =============================================================================
+ANTHROPIC_API_KEY="your-key"
+OPENAI_API_KEY="your-key"
+GEMINI_API_KEY="your-key"
 
-# Gemini-specific settings
-export ZSH_AI_GEMINI_MODEL="gemini-2.5-flash"  # (default)
+# =============================================================================
+# Provider-specific settings
+# =============================================================================
 
-# OpenAI-specific settings
-export ZSH_AI_OPENAI_MODEL="gpt-4o"  # (default)
-export ZSH_AI_OPENAI_URL="https://api.openai.com/v1/chat/completions" # (default)
+# Anthropic
+ZSH_AI_ANTHROPIC_MODEL="claude-haiku-4-5"
 
+# OpenAI
+ZSH_AI_OPENAI_MODEL="gpt-4o"
+ZSH_AI_OPENAI_URL="https://api.openai.com/v1/chat/completions"
 
-# Ollama-specific settings 
-export ZSH_AI_OLLAMA_MODEL="llama3.2"  # (default)
-export ZSH_AI_OLLAMA_URL="http://localhost:11434"  # (default)
+# Gemini
+ZSH_AI_GEMINI_MODEL="gemini-2.5-flash"
 
-# Advanced: Extend the AI prompt with custom instructions
-# This adds to the existing prompt without replacing it
-export ZSH_AI_PROMPT_EXTEND="Always prefer modern CLI tools like ripgrep, fd, and bat."
+# Ollama
+ZSH_AI_OLLAMA_MODEL="llama3.2"
+ZSH_AI_OLLAMA_URL="http://localhost:11434"
 
-# Advanced: Extra kwargs for LLM API calls (JSON format)
-# Override temperature, add top_p, etc.
-export ZSH_AI_EXTRA_KWARGS='{"temperature": 0.1}'
+# =============================================================================
+# Advanced settings
+# =============================================================================
+
+# Request timeout (seconds)
+ZSH_AI_TIMEOUT=30
+
+# Extra kwargs for LLM API calls (JSON format)
+ZSH_AI_EXTRA_KWARGS='{"temperature": 0.1}'
 ```
 
-**That's it!** Most users won't need to change anything.
+**That's it!** Most users only need to set `ZSH_AI_PROVIDER` and the corresponding API key.
 
-### Advanced Configuration
+## Customizing the Prompt
 
-#### Custom Prompt Extensions
+The AI prompt can be customized by editing `prompt.yaml` in the plugin directory:
 
-You can extend the AI's system prompt with your own instructions using `ZSH_AI_PROMPT_EXTEND`. This is useful for:
-- Adding preferences for specific tools
-- Customizing behavior for your workflow
-- Providing project-specific context
+```yaml
+system_prompt: |
+  You are a zsh command generator...
+
+  Your custom instructions here.
+
+# Optional: Add extra instructions without replacing the main prompt
+prompt_extend: |
+  Always prefer modern CLI tools like ripgrep, fd, and bat.
+```
+
+Alternatively, set `ZSH_AI_PROMPT_EXTEND` in your `.env` file for simple extensions:
 
 ```bash
-# Example: Prefer modern CLI alternatives
-export ZSH_AI_PROMPT_EXTEND="Always prefer ripgrep (rg) over grep, fd over find, and bat over cat."
-
-# Example: Add multiple rules
-export ZSH_AI_PROMPT_EXTEND="Additional preferences:
-- Use GNU coreutils commands when available
-- Prefer one-liners over scripts
-- Always add the -v flag for verbose output"
-
-# Example: Project-specific instructions
-export ZSH_AI_PROMPT_EXTEND="This is a Rails project. Use bundle exec for all ruby commands."
+ZSH_AI_PROMPT_EXTEND="Always prefer ripgrep (rg) over grep, fd over find."
 ```
-
-The extension is added to the core prompt without replacing it, ensuring the AI still follows essential command generation rules.

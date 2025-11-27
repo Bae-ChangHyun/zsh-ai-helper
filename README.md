@@ -1,4 +1,4 @@
-# 🪄 zsh-ai
+# zsh-ai
 
 > The lightweight AI assistant that lives in your terminal
 
@@ -8,17 +8,17 @@ Transform natural language into shell commands instantly. Works with cloud-based
 
 ## Why zsh-ai?
 
-**🪶 Featherweight** - A single 5KB shell script. No Python, no Node.js, etc.
+**Featherweight** - A single 5KB shell script. No Python, no Node.js, etc.
 
-**🚀 Lightning Fast** - Starts instantly with your shell.
+**Lightning Fast** - Starts instantly with your shell.
 
-**🎯 Dead Simple** - Just type `# what you want to do` and press Enter. That's it.
+**Dead Simple** - Just type `# what you want to do` and press Enter. That's it.
 
-**🔒 Privacy First** - Use local Ollama models for complete privacy, or bring your own API keys. Your commands stay local, API calls only when you trigger them.
+**Privacy First** - Use local Ollama models for complete privacy, or bring your own API keys. Your commands stay local, API calls only when you trigger them.
 
-**🛠️ Zero Dependencies** - Optionally `jq` for reliability.
+**Zero Dependencies** - Optionally `jq` for reliability.
 
-**🧠 Context Aware** - Automatically detects project type, git status, and current directory for smarter suggestions.
+**Context Aware** - Automatically detects project type, git status, and current directory for smarter suggestions.
 
 ## Demo
 
@@ -32,7 +32,7 @@ Type `#` followed by what you want to do, then press Enter. It's that simple!
 $ # find all large files modified this week
 $ find . -type f -size +50M -mtime -7
 
-$ # kill process using port 3000  
+$ # kill process using port 3000
 $ lsof -ti:3000 | xargs kill -9
 
 $ # compress images in current directory
@@ -78,11 +78,11 @@ $ for img in *.{jpg,png}; do convert "$img" -quality 85 "$img"; done
 
 3. **Use** - Type `# your command` and press Enter!
 
-📚 **[Full Installation Guide →](INSTALL.md)**
+**[Full Installation Guide](INSTALL.md)**
 
 ## Configuration
 
-All settings can be managed via `.env` file in the plugin directory:
+All settings are managed via `.env` file in the plugin directory:
 
 ```bash
 # Provider: "anthropic", "gemini", "openai", or "ollama"
@@ -94,15 +94,30 @@ OPENAI_API_KEY="your-key"
 # Custom API endpoint (for self-hosted or compatible APIs)
 ZSH_AI_OPENAI_URL="https://api.openai.com/v1/chat/completions"
 
+# Request timeout (seconds)
+ZSH_AI_TIMEOUT=30
+
 # Extra parameters for LLM API calls (JSON format)
 ZSH_AI_EXTRA_KWARGS='{"temperature": 0.1}'
 ```
 
-📚 **[Full Configuration Guide →](INSTALL.md#configuration)**
+**[Full Configuration Guide](INSTALL.md#configuration)**
+
+## Customizing the Prompt
+
+Edit `prompt.yaml` in the plugin directory to customize the AI behavior:
+
+```yaml
+system_prompt: |
+  Your custom prompt here...
+
+prompt_extend: |
+  Additional instructions...
+```
 
 ## Documentation
 
-- 📦 **[Installation & Setup](INSTALL.md)** - Detailed installation instructions for all package managers
-- 🔧 **[Configuration](INSTALL.md#configuration)** - API keys, providers, and customization options
-- 🚨 **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
-- 🤝 **[Contributing](CONTRIBUTING.md)** - Help make zsh-ai better!
+- **[Installation & Setup](INSTALL.md)** - Detailed installation instructions for all package managers
+- **[Configuration](INSTALL.md#configuration)** - API keys, providers, and customization options
+- **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Contributing](CONTRIBUTING.md)** - Help make zsh-ai better!
