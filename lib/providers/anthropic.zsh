@@ -19,6 +19,7 @@ _zsh_ai_query_anthropic() {
 {
     "model": "$ZSH_AI_ANTHROPIC_MODEL",
     "max_tokens": 256,
+    "temperature": 0.3,
     "system": "$escaped_system_prompt",
     "messages": [
         {
