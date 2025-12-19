@@ -1,6 +1,10 @@
 MIT License
 
-Copyright (c) 2024 zsh-ai contributors
+Copyright (c) 2024 zsh-ai contributors (Original authors)
+Copyright (c) 2024-present Bae Chang Hyun (Fork and enhancements)
+
+This project is based on zsh-ai by Matheus Lao and contributors
+Original repository: https://github.com/matheusml/zsh-ai
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
