@@ -47,12 +47,13 @@ _zsh_ai_check_ollama() {
 # Function to call Ollama API
 _zsh_ai_query_ollama() {
     local query="$1"
+    local has_explanation="$2"  # "true" if --e flag is present
     local response
-    
+
     # Build context
     local context=$(_zsh_ai_build_context)
     local escaped_context=$(_zsh_ai_escape_json "$context")
-    local system_prompt=$(_zsh_ai_get_system_prompt "$escaped_context")
+    local system_prompt=$(_zsh_ai_get_system_prompt "$escaped_context" "$has_explanation")
     local escaped_system_prompt=$(_zsh_ai_escape_json "$system_prompt")
     
     # Prepare the JSON payload

@@ -59,6 +59,10 @@ _ZSH_AI_DANGEROUS_PATTERNS=(
     # Dangerous find with exec
     'find.*-exec rm|Mass file deletion'
     'find.*-delete|Mass file deletion'
+
+    # Force kill commands
+    'kill -9|Forces process termination without cleanup (use kill -15 first)'
+    'killall -9|Forces multiple process termination without cleanup'
 )
 
 # Function to check if a command contains dangerous patterns
@@ -91,6 +95,6 @@ _zsh_ai_add_warning_comment() {
     local cmd="$1"
     local warning="$2"
 
-    # Format: command  # ⚠️  WARNING: message
-    echo "$cmd  # ⚠️  WARNING: $warning"
+    # Format: command  # [WARNING] message
+    echo "$cmd  # [WARNING] $warning"
 }

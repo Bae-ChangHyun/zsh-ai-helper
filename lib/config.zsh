@@ -46,72 +46,12 @@ _zsh_ai_load_env() {
     done < "$env_file"
 }
 
-# Load prompt from YAML file
-_zsh_ai_load_prompt() {
-    local plugin_dir="${ZSH_AI_PLUGIN_DIR:-${0:A:h:h}}"
-    local yaml_file="${plugin_dir}/prompt.yaml"
-
-    [[ ! -f "$yaml_file" ]] && return
-
-    local in_system_prompt=false
-    local in_prompt_extend=false
-    local in_explain_prompt=false
-    local system_prompt=""
-    local prompt_extend=""
-    local explain_prompt=""
-
-    while IFS= read -r line || [[ -n "$line" ]]; do
-        # Check for key starts
-        if [[ "$line" =~ ^system_prompt:.*\|[[:space:]]*$ ]]; then
-            in_system_prompt=true
-            in_prompt_extend=false
-            in_explain_prompt=false
-            continue
-        elif [[ "$line" =~ ^prompt_extend:.*\|[[:space:]]*$ ]]; then
-            in_prompt_extend=true
-            in_system_prompt=false
-            in_explain_prompt=false
-            continue
-        elif [[ "$line" =~ ^explain_prompt:.*\|[[:space:]]*$ ]]; then
-            in_explain_prompt=true
-            in_system_prompt=false
-            in_prompt_extend=false
-            continue
-        elif [[ "$line" =~ ^[a-z_]+: ]] && [[ ! "$line" =~ ^\# ]]; then
-            in_system_prompt=false
-            in_prompt_extend=false
-            in_explain_prompt=false
-            continue
-        fi
-
-        # Skip comments
-        [[ "$line" =~ ^[[:space:]]*\# ]] && continue
-
-        # Collect multiline values (indented lines)
-        if [[ "$line" =~ ^[[:space:]][[:space:]] ]]; then
-            local content="${line#  }"  # Remove 2-space indent
-            if $in_system_prompt; then
-                [[ -n "$system_prompt" ]] && system_prompt="${system_prompt}\n"
-                system_prompt="${system_prompt}${content}"
-            elif $in_prompt_extend; then
-                [[ -n "$prompt_extend" ]] && prompt_extend="${prompt_extend}\n"
-                prompt_extend="${prompt_extend}${content}"
-            elif $in_explain_prompt; then
-                [[ -n "$explain_prompt" ]] && explain_prompt="${explain_prompt}\n"
-                explain_prompt="${explain_prompt}${content}"
-            fi
-        fi
-    done < "$yaml_file"
-
-    # Export as environment variables
-    [[ -n "$system_prompt" ]] && export ZSH_AI_SYSTEM_PROMPT="$system_prompt"
-    [[ -n "$prompt_extend" ]] && export ZSH_AI_PROMPT_EXTEND="$prompt_extend"
-    [[ -n "$explain_prompt" ]] && export ZSH_AI_EXPLAIN_PROMPT="$explain_prompt"
-}
+# Note: Prompt loading has been removed. System prompts are now hardcoded in lib/utils.zsh
+# to ensure consistent JSON output format and safety checks.
+# User customization of prompts via prompt.yaml or environment variables is no longer supported.
 
 # Load configurations
 _zsh_ai_load_env
-_zsh_ai_load_prompt
 
 # Set default values
 : ${ZSH_AI_PROVIDER:="anthropic"}

@@ -3,18 +3,63 @@
 # Utility functions for zsh-ai
 
 # Function to get the standardized system prompt for all providers
+# Note: This prompt is hardcoded and cannot be customized by users to ensure
+# consistent JSON output and safety checks.
 _zsh_ai_get_system_prompt() {
     local context="$1"
+    local has_explanation="$2"  # "true" if --e flag is present
 
-    # Use prompt from YAML if loaded, otherwise use default
-    local base_prompt="${ZSH_AI_SYSTEM_PROMPT:-You are a zsh command generator. Generate syntactically correct zsh commands based on the user's natural language request.\n\nIMPORTANT RULES:\n1. Output ONLY the raw command - no explanations, no markdown, no backticks\n2. For arguments containing spaces or special characters, use single quotes\n3. Use double quotes only when variable expansion is needed\n4. Properly escape special characters within quotes\n\nExamples:\n- echo 'Hello World!' (spaces require quotes)\n- echo \"Current user: \$USER\" (variable expansion needs double quotes)\n- grep 'pattern with spaces' file.txt\n- find . -name '*.txt' (glob patterns in quotes)}"
+    # Get language instruction
+    local lang_instruction=$(_zsh_ai_get_lang_instruction)
 
-    # Add custom prompt extension if provided
-    if [[ -n "$ZSH_AI_PROMPT_EXTEND" ]]; then
-        echo "${base_prompt}\n\n${ZSH_AI_PROMPT_EXTEND}\n\nContext:\n$context"
+    # Build JSON format specification based on --e flag
+    local json_format
+    if [[ "$has_explanation" == "true" ]]; then
+        json_format='{"command": "your zsh command here", "explanation": "brief explanation", "warning": null}'
     else
-        echo "${base_prompt}\n\nContext:\n$context"
+        json_format='{"command": "your zsh command here", "warning": null}'
     fi
+
+    # Hardcoded system prompt (cannot be overridden by users)
+    local base_prompt="You are a zsh command generator. Generate syntactically correct zsh commands based on the user's natural language request.
+
+CRITICAL: You MUST respond with ONLY valid JSON in this exact format:
+${json_format}
+
+IMPORTANT RULES:
+1. Output ONLY raw JSON - no markdown code blocks, no backticks, no explanations outside JSON
+2. The \"command\" field must contain a syntactically correct zsh command
+3. For arguments containing spaces or special characters, use single quotes
+4. Use double quotes only when variable expansion is needed
+5. Properly escape special characters within quotes
+
+SAFETY RULES:
+6. If the command is dangerous (can cause data loss, system damage, or security issues), set \"warning\" with a clear explanation of the danger and suggest safer alternatives
+7. Examples of dangerous commands: rm -rf /, dd to disk devices, chmod 777, curl|bash, fork bombs
+8. If command is safe, set \"warning\" to null
+9. NEVER set both \"explanation\" and \"warning\" - use only one based on safety"
+
+    if [[ "$has_explanation" == "true" ]]; then
+        base_prompt="${base_prompt}
+10. The \"explanation\" field should briefly describe what the command does (1-2 sentences)
+11. ${lang_instruction}"
+    else
+        base_prompt="${base_prompt}
+10. ${lang_instruction} (for warning messages only)"
+    fi
+
+    base_prompt="${base_prompt}
+
+Examples of good command quoting:
+- echo 'Hello World!' (spaces require quotes)
+- echo \"Current user: \$USER\" (variable expansion needs double quotes)
+- grep 'pattern with spaces' file.txt
+- find . -name '*.txt' (glob patterns in quotes)
+
+Context:
+${context}"
+
+    echo "$base_prompt"
 }
 
 # Function to properly escape strings for JSON
@@ -31,6 +76,80 @@ _zsh_ai_validate_json() {
         return $?
     fi
     return 0  # Skip validation if jq not available
+}
+
+# Fix common JSON formatting issues
+_zsh_ai_fix_json() {
+    local broken_json="$1"
+
+    # Remove markdown code blocks if present
+    broken_json=$(echo "$broken_json" | sed 's/^```json\?//; s/```$//')
+
+    # Remove leading/trailing whitespace
+    broken_json=$(echo "$broken_json" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+
+    # Remove trailing commas before closing braces/brackets
+    broken_json=$(echo "$broken_json" | sed 's/,[[:space:]]*}/}/g; s/,[[:space:]]*\]/]/g')
+
+    # Try to fix common escaping issues (simple cases only)
+    # This is conservative - we don't want to break valid JSON
+
+    echo "$broken_json"
+}
+
+# Parse LLM's JSON response and extract fields
+# Returns: Sets global variables _ZSH_AI_CMD, _ZSH_AI_EXPLANATION, _ZSH_AI_WARNING
+_zsh_ai_parse_llm_json() {
+    local content="$1"
+
+    # Initialize return variables
+    _ZSH_AI_CMD=""
+    _ZSH_AI_EXPLANATION=""
+    _ZSH_AI_WARNING=""
+
+    # Try to validate JSON first
+    if ! _zsh_ai_validate_json "$content"; then
+        # Try to fix common JSON issues
+        content=$(_zsh_ai_fix_json "$content")
+
+        # Validate again after fix
+        if ! _zsh_ai_validate_json "$content"; then
+            # JSON parsing failed - try regex fallback
+            _ZSH_AI_CMD=$(echo "$content" | sed -n 's/.*"command"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+            if [[ -z "$_ZSH_AI_CMD" ]]; then
+                echo "Error: Failed to parse JSON response from LLM"
+                return 1
+            fi
+            # Try to extract warning/explanation with regex
+            _ZSH_AI_WARNING=$(echo "$content" | sed -n 's/.*"warning"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+            _ZSH_AI_EXPLANATION=$(echo "$content" | sed -n 's/.*"explanation"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+            return 0
+        fi
+    fi
+
+    # JSON is valid, parse with jq if available
+    if command -v jq &> /dev/null; then
+        _ZSH_AI_CMD=$(echo "$content" | jq -r '.command // empty' 2>/dev/null)
+        _ZSH_AI_WARNING=$(echo "$content" | jq -r '.warning // empty' 2>/dev/null)
+        _ZSH_AI_EXPLANATION=$(echo "$content" | jq -r '.explanation // empty' 2>/dev/null)
+
+        # Convert "null" string to empty
+        [[ "$_ZSH_AI_WARNING" == "null" ]] && _ZSH_AI_WARNING=""
+        [[ "$_ZSH_AI_EXPLANATION" == "null" ]] && _ZSH_AI_EXPLANATION=""
+    else
+        # Fallback: Use sed/grep to extract fields
+        _ZSH_AI_CMD=$(echo "$content" | sed -n 's/.*"command"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+        _ZSH_AI_WARNING=$(echo "$content" | sed -n 's/.*"warning"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+        _ZSH_AI_EXPLANATION=$(echo "$content" | sed -n 's/.*"explanation"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+    fi
+
+    # Validate that we got at least a command
+    if [[ -z "$_ZSH_AI_CMD" ]]; then
+        echo "Error: No command found in LLM response"
+        return 1
+    fi
+
+    return 0
 }
 
 # Standardized error message formatter
@@ -260,44 +379,6 @@ _zsh_ai_get_lang_instruction() {
     esac
 }
 
-# System prompt for explaining commands
-_zsh_ai_get_explain_prompt() {
-    local lang_instruction=$(_zsh_ai_get_lang_instruction)
-    local default_prompt="You are a shell command explainer. Given a shell command, provide a brief, clear explanation of what it does.\n\nIMPORTANT RULES:\n1. Output ONLY the explanation text - no markdown, no backticks, no formatting\n2. Keep it concise (1-2 sentences maximum)\n3. Focus on what the command does, not how to use it\n4. Use simple, clear language\n\nExample:\nCommand: find . -name '*.txt' -mtime -1\nExplanation: Finds all .txt files in current directory modified within the last day"
-
-    # Use custom prompt from YAML if available, otherwise use default
-    local base_prompt="${ZSH_AI_EXPLAIN_PROMPT:-$default_prompt}"
-
-    # Always prepend language instruction
-    echo "${lang_instruction}\n\n${base_prompt}"
-}
-
-# Function to get explanation for a command via second LLM call
-_zsh_ai_explain_command() {
-    local cmd="$1"
-    local explanation
-
-    # Build a simple query for explanation
-    local explain_query="Command: $cmd\nExplanation:"
-
-    # Temporarily override the system prompt for explanation
-    local original_prompt="$ZSH_AI_SYSTEM_PROMPT"
-    export ZSH_AI_SYSTEM_PROMPT=$(_zsh_ai_get_explain_prompt)
-
-    # Query the LLM for explanation
-    explanation=$(_zsh_ai_query "$explain_query")
-
-    # Restore original prompt
-    if [[ -n "$original_prompt" ]]; then
-        export ZSH_AI_SYSTEM_PROMPT="$original_prompt"
-    else
-        unset ZSH_AI_SYSTEM_PROMPT
-    fi
-
-    # Return explanation (clean up any leading/trailing whitespace)
-    echo "$explanation" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
-}
-
 # Function to format command with explanation as inline comment
 _zsh_ai_format_with_explanation() {
     local cmd="$1"
@@ -312,7 +393,8 @@ _zsh_ai_format_with_explanation() {
 # Main query function that routes to the appropriate provider
 _zsh_ai_query() {
     local query="$1"
-    
+    local has_explanation="$2"  # "true" if --e flag is present
+
     if [[ "$ZSH_AI_PROVIDER" == "ollama" ]]; then
         # Check if Ollama is running first
         if ! _zsh_ai_check_ollama; then
@@ -325,13 +407,13 @@ _zsh_ai_query() {
             echo "  2. Or check URL in .env: ZSH_AI_OLLAMA_URL"
             return 1
         fi
-        _zsh_ai_query_ollama "$query"
+        _zsh_ai_query_ollama "$query" "$has_explanation"
     elif [[ "$ZSH_AI_PROVIDER" == "gemini" ]]; then
-        _zsh_ai_query_gemini "$query"
+        _zsh_ai_query_gemini "$query" "$has_explanation"
     elif [[ "$ZSH_AI_PROVIDER" == "openai" ]]; then
-        _zsh_ai_query_openai "$query"
+        _zsh_ai_query_openai "$query" "$has_explanation"
     else
-        _zsh_ai_query_anthropic "$query"
+        _zsh_ai_query_anthropic "$query" "$has_explanation"
     fi
 }
 
@@ -364,33 +446,51 @@ _zsh_ai_execute_command() {
     local explain_flag=$_ZSH_AI_EXPLAIN_FLAG
     local clean_query="$_ZSH_AI_CLEAN_QUERY"
 
-    # Get the command from LLM
-    local cmd=$(_zsh_ai_query "$clean_query")
+    # Convert explain_flag to string for function signature
+    local has_explanation="false"
+    [[ $explain_flag -eq 1 ]] && has_explanation="true"
 
-    if [[ -n "$cmd" ]] && [[ "$cmd" != "Error:"* ]]; then
-        # Check for dangerous commands first (highest priority)
-        if _zsh_ai_check_dangerous_command "$cmd"; then
-            # Safe command - proceed with explanation if requested
-            if [[ $explain_flag -eq 1 ]]; then
-                local explanation=$(_zsh_ai_explain_command "$cmd")
-                if [[ -n "$explanation" ]] && [[ "$explanation" != "Error:"* ]]; then
-                    _zsh_ai_format_with_explanation "$cmd" "$explanation"
-                else
-                    # If explanation failed, just return the command
-                    echo "$cmd"
-                fi
-            else
-                echo "$cmd"
-            fi
-        else
-            # Dangerous command detected - add warning comment (ignore --e flag)
-            _zsh_ai_add_warning_comment "$cmd" "$_ZSH_AI_DANGER_WARNING"
-        fi
-        return 0
-    else
-        echo "$cmd"
+    # Get JSON response from LLM
+    local llm_response=$(_zsh_ai_query "$clean_query" "$has_explanation")
+
+    # Check for error in raw response
+    if [[ "$llm_response" == "Error:"* ]]; then
+        echo "$llm_response"
         return 1
     fi
+
+    # Parse JSON response
+    if ! _zsh_ai_parse_llm_json "$llm_response"; then
+        # Parsing failed - error message already printed by parser
+        return 1
+    fi
+
+    # Extract parsed values from global variables
+    local cmd="$_ZSH_AI_CMD"
+    local explanation="$_ZSH_AI_EXPLANATION"
+    local warning="$_ZSH_AI_WARNING"
+
+    # Fallback safety check: If LLM didn't provide warning, check with regex patterns
+    if [[ -z "$warning" ]]; then
+        if ! _zsh_ai_check_dangerous_command "$cmd"; then
+            # Dangerous command detected by fallback - use regex warning
+            warning="$_ZSH_AI_DANGER_WARNING"
+        fi
+    fi
+
+    # Format final output
+    if [[ -n "$warning" ]]; then
+        # Dangerous command - add warning (ignore explanation even if present)
+        _zsh_ai_add_warning_comment "$cmd" "$warning"
+    elif [[ -n "$explanation" ]]; then
+        # Safe command with explanation
+        _zsh_ai_format_with_explanation "$cmd" "$explanation"
+    else
+        # Safe command without explanation
+        echo "$cmd"
+    fi
+
+    return 0
 }
 
 # Optional: Add a helper function for users who prefer explicit commands
