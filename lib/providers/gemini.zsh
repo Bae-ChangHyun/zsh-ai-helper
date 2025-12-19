@@ -49,13 +49,21 @@ EOF
     json_payload=$(_zsh_ai_merge_extra_kwargs "$json_payload")
     
     # Call the API
-    # Note: Gemini API requires key in URL parameter (API design limitation)
-    # This is the official Google API pattern and cannot be changed
+    # Use temporary file for headers to prevent API key exposure in process list
+    local header_file=$(mktemp)
+    chmod 600 "$header_file"
+    cat > "$header_file" <<HEADERS
+x-goog-api-key: $GEMINI_API_KEY
+content-type: application/json
+HEADERS
+
     response=$(curl -s -w "\n%{http_code}" --max-time "$ZSH_AI_TIMEOUT" --connect-timeout 10 \
-        "https://generativelanguage.googleapis.com/v1beta/models/${ZSH_AI_GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}" \
-        --header "content-type: application/json" \
+        "https://generativelanguage.googleapis.com/v1beta/models/${ZSH_AI_GEMINI_MODEL}:generateContent" \
+        -H @"$header_file" \
         --data "$json_payload" 2>&1)
     local curl_exit_code=$?
+
+    rm -f "$header_file"
 
     # Check curl exit code
     if ! _zsh_ai_handle_curl_error "$curl_exit_code" "gemini"; then
