@@ -29,6 +29,7 @@ _zsh_ai_accept_line() {
         
         # Create a temp file for the response
         local tmpfile=$(mktemp)
+        chmod 600 "$tmpfile"
         trap "rm -f '$tmpfile'" RETURN INT TERM
 
         # Disable job control notifications

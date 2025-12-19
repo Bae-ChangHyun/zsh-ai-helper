@@ -44,11 +44,20 @@ EOF
     json_payload=$(_zsh_ai_merge_extra_kwargs "$json_payload")
     
     # Call the API
+    # Use temporary file for headers to prevent API key exposure in process list
+    local header_file=$(mktemp)
+    chmod 600 "$header_file"
+    cat > "$header_file" <<HEADERS
+Authorization: Bearer $OPENAI_API_KEY
+content-type: application/json
+HEADERS
+
     response=$(curl -s --max-time "$ZSH_AI_TIMEOUT" --connect-timeout 10 \
         ${ZSH_AI_OPENAI_URL} \
-        --header "Authorization: Bearer $OPENAI_API_KEY" \
-        --header "content-type: application/json" \
+        -H @"$header_file" \
         --data "$json_payload" 2>&1)
+
+    rm -f "$header_file"
     
     if [[ $? -ne 0 ]]; then
         echo "Error: Failed to connect to OpenAI API"

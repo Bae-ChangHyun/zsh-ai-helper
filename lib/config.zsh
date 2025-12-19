@@ -15,6 +15,20 @@ _zsh_ai_load_env() {
 
     [[ -z "$env_file" ]] && return
 
+    # Check file permissions for security
+    local perms
+    if [[ "$(uname)" == "Linux" ]]; then
+        perms=$(stat -c %a "$env_file" 2>/dev/null)
+    else
+        # macOS and BSD
+        perms=$(stat -f %Lp "$env_file" 2>/dev/null)
+    fi
+
+    if [[ -n "$perms" && "$perms" != "600" && "$perms" != "400" ]]; then
+        echo "Warning: $env_file has insecure permissions ($perms). Recommended: 600" >&2
+        echo "Run: chmod 600 $env_file" >&2
+    fi
+
     while IFS= read -r line || [[ -n "$line" ]]; do
         [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
         [[ "$line" != *"="* ]] && continue

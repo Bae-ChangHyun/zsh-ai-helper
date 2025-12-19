@@ -34,12 +34,21 @@ EOF
     json_payload=$(_zsh_ai_merge_extra_kwargs "$json_payload")
     
     # Call the API
+    # Use temporary file for headers to prevent API key exposure in process list
+    local header_file=$(mktemp)
+    chmod 600 "$header_file"
+    cat > "$header_file" <<HEADERS
+x-api-key: $ANTHROPIC_API_KEY
+anthropic-version: 2023-06-01
+content-type: application/json
+HEADERS
+
     response=$(curl -s --max-time "$ZSH_AI_TIMEOUT" --connect-timeout 10 \
         https://api.anthropic.com/v1/messages \
-        --header "x-api-key: $ANTHROPIC_API_KEY" \
-        --header "anthropic-version: 2023-06-01" \
-        --header "content-type: application/json" \
+        -H @"$header_file" \
         --data "$json_payload" 2>&1)
+
+    rm -f "$header_file"
     
     if [[ $? -ne 0 ]]; then
         echo "Error: Failed to connect to Anthropic API"

@@ -48,6 +48,8 @@ EOF
     json_payload=$(_zsh_ai_merge_extra_kwargs "$json_payload")
     
     # Call the API
+    # Note: Gemini API requires key in URL parameter (API design limitation)
+    # This is the official Google API pattern and cannot be changed
     response=$(curl -s --max-time "$ZSH_AI_TIMEOUT" --connect-timeout 10 \
         "https://generativelanguage.googleapis.com/v1beta/models/${ZSH_AI_GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}" \
         --header "content-type: application/json" \
