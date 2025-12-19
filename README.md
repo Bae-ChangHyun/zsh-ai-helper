@@ -12,6 +12,7 @@ Smart command-line assistant with enhanced safety features and error handling
 [![Dependencies](https://img.shields.io/badge/Dependencies-zero-brightgreen?style=flat-square)](#)
 [![Size](https://img.shields.io/badge/Size-~5KB-orange?style=flat-square)](#)
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS-lightgrey?style=flat-square)](#)
+[![Built with Claude](https://img.shields.io/badge/Built%20with-Claude%20Code-D97757?style=flat-square&logo=anthropic)](https://claude.ai)
 
 
 <div align="center">
