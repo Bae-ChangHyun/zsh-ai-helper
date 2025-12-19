@@ -18,7 +18,8 @@ _zsh_ai_query_anthropic() {
     local json_payload=$(cat <<EOF
 {
     "model": "$ZSH_AI_ANTHROPIC_MODEL",
-    "max_tokens": 256,
+    "max_tokens": $ZSH_AI_MAX_TOKENS,
+    "temperature": $ZSH_AI_TEMPERATURE,
     "system": "$escaped_system_prompt",
     "messages": [
         {
@@ -29,60 +30,44 @@ _zsh_ai_query_anthropic() {
 }
 EOF
 )
+    # Merge extra kwargs if provided
+    json_payload=$(_zsh_ai_merge_extra_kwargs "$json_payload")
     
     # Call the API
-    response=$(curl -s https://api.anthropic.com/v1/messages \
-        --header "x-api-key: $ANTHROPIC_API_KEY" \
-        --header "anthropic-version: 2023-06-01" \
-        --header "content-type: application/json" \
+    # Use temporary file for headers to prevent API key exposure in process list
+    local header_file=$(mktemp)
+    chmod 600 "$header_file"
+    cat > "$header_file" <<HEADERS
+x-api-key: $ANTHROPIC_API_KEY
+anthropic-version: 2023-06-01
+content-type: application/json
+HEADERS
+
+    response=$(curl -s -w "\n%{http_code}" --max-time "$ZSH_AI_TIMEOUT" --connect-timeout 10 \
+        https://api.anthropic.com/v1/messages \
+        -H @"$header_file" \
         --data "$json_payload" 2>&1)
-    
-    if [[ $? -ne 0 ]]; then
-        echo "Error: Failed to connect to Anthropic API"
+    local curl_exit_code=$?
+
+    rm -f "$header_file"
+
+    # Check curl exit code
+    if ! _zsh_ai_handle_curl_error "$curl_exit_code" "anthropic"; then
+        return 1
+    fi
+
+    # Extract HTTP status code (last line) and response body
+    local http_code="${response##*$'\n'}"
+    response="${response%$'\n'*}"
+
+    # Check HTTP status code
+    if ! _zsh_ai_handle_http_error "$http_code" "anthropic"; then
         return 1
     fi
     
     # Debug: Uncomment to see raw response
     # echo "DEBUG: Raw response: $response" >&2
-    
-    # Extract the content from the response
-    # Try using jq if available, otherwise fall back to sed/grep
-    if command -v jq &> /dev/null; then
-        local result=$(echo "$response" | jq -r '.content[0].text // empty' 2>/dev/null)
-        if [[ -z "$result" ]]; then
-            # Check for error message
-            local error=$(echo "$response" | jq -r '.error.message // empty' 2>/dev/null)
-            if [[ -n "$error" ]]; then
-                echo "API Error: $error"
-            else
-                echo "Error: Unable to parse response"
-            fi
-            return 1
-        fi
-        # Clean up the response - remove newlines and trailing whitespace
-        # Commands should be single-line for shell execution
-        result=$(echo "$result" | tr -d '\n' | sed 's/[[:space:]]*$//')
-        echo "$result"
-    else
-        # Fallback parsing without jq - handle responses with newlines
-        # Use sed to extract the text field, handling potential newlines
-        local result=$(echo "$response" | sed -n 's/.*"text":"\([^"]*\)".*/\1/p' | head -1)
-        
-        # If the simple extraction failed, try a more complex approach for multiline responses
-        if [[ -z "$result" ]]; then
-            # Extract text field even if it contains escaped newlines
-            result=$(echo "$response" | perl -0777 -ne 'print $1 if /"text":"((?:[^"\\]|\\.)*)"/s' 2>/dev/null)
-        fi
-        
-        if [[ -z "$result" ]]; then
-            echo "Error: Unable to parse response (install jq for better reliability)"
-            return 1
-        fi
-        
-        # Unescape JSON string (handle \n, \t, etc.) and clean up
-        result=$(echo "$result" | sed 's/\\n/\n/g; s/\\t/\t/g; s/\\r/\r/g; s/\\"/"/g; s/\\\\/\\/g')
-        # Remove trailing newlines and spaces
-        result=$(echo "$result" | sed 's/[[:space:]]*$//')
-        echo "$result"
-    fi
+
+    # Parse response using common parser
+    _zsh_ai_parse_response "$response" ".content[0].text" "text"
 }

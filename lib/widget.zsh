@@ -4,17 +4,20 @@
 
 # Custom widget to intercept Enter key
 _zsh_ai_accept_line() {
-    # Check if the line starts with "# " and handle multiline input
-    if [[ "$BUFFER" =~ ^'# ' ]]; then
+    local prefix="${ZSH_AI_PREFIX:-# }"
+    local prefix_len=${#prefix}
+
+    # Check if the line starts with the configured prefix and handle multiline input
+    if [[ "$BUFFER" == "${prefix}"* ]]; then
         # Check if buffer contains newlines (multiline command)
         if [[ "$BUFFER" == *$'\n'* ]]; then
             # Multiline command detected - execute normally without AI processing
             zle .accept-line
             return
         fi
-        
-        # Extract the query (remove the "# " prefix)
-        local query="${BUFFER:2}"
+
+        # Extract the query (remove the prefix)
+        local query="${BUFFER:$prefix_len}"
         
         # Add a loading indicator with animation
         local saved_buffer="$BUFFER"
@@ -26,13 +29,14 @@ _zsh_ai_accept_line() {
         
         # Create a temp file for the response
         local tmpfile=$(mktemp)
-        
+        chmod 600 "$tmpfile"
+        trap "rm -f '$tmpfile'" RETURN INT TERM
+
         # Disable job control notifications
         setopt local_options no_monitor no_notify
-        
-        # Start the API query in background using the shared function
-        # Only redirect stdout to tmpfile, let stderr go to /dev/null to avoid mixing error output
-        (_zsh_ai_execute_command "$query" > "$tmpfile" 2>/dev/null) &
+
+        # Start the API query in background
+        (_zsh_ai_execute_command "$query" > "$tmpfile" 2>&1) &
         local pid=$!
         
         # Animate while waiting
@@ -46,10 +50,8 @@ _zsh_ai_accept_line() {
         
         # Get the response
         local cmd=$(cat "$tmpfile")
-        local exit_code=$?
-        rm -f "$tmpfile"
         
-        if [[ -n "$cmd" ]] && [[ "$cmd" != "Error:"* ]] && [[ "$cmd" != "API Error:"* ]]; then
+        if [[ -n "$cmd" ]] && [[ "$cmd" != "Error:"* ]]; then
             # Simply replace the buffer with the generated command
             BUFFER="$cmd"
 
