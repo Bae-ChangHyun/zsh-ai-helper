@@ -19,11 +19,6 @@ Smart command-line assistant with enhanced safety features and error handling
 
 ---
 
-> **💡 About This Project**<br/>
-> This project is based on [matheusml/zsh-ai](https://github.com/matheusml/zsh-ai) with additional features including dangerous command detection, improved error handling, and Korean language support.
-
----
-
 ## 📖 Project Overview
 
 **zsh-ai-helper** is a lightweight plugin that leverages AI technology to convert natural language into ZSH shell commands.
@@ -74,8 +69,6 @@ $ mkfs.ext4 /dev/sda  # ⚠️  WARNING: Formatting will permanently erase all d
 
 ## ✨ Key Features
 
-### 🚀 Core Features
-
 | Feature | Description |
 |:---|:---|
 | **Zero Dependencies** | Pure ZSH script (~5KB), only requires `curl` |
@@ -84,8 +77,9 @@ $ mkfs.ext4 /dev/sda  # ⚠️  WARNING: Formatting will permanently erase all d
 | **Command Explanation** | Provides explanations for generated commands with `--e` flag |
 | **Multilingual Support** | Supports 7 languages (EN, KO, JA, ZH, DE, FR, ES) |
 | **Customizable** | YAML-based prompt configuration and custom prefix support |
+| **Korean Documentation** | Full Korean README and guides available |
 
-### 🛡️ Enhanced Safety Features (Improvements over original project)
+### 🛡️ Safety & Security
 
 <details>
 <summary><strong>⚠️ Automatic Dangerous Command Detection</strong></summary>
@@ -127,12 +121,6 @@ User-friendly detailed error guidance:
 - **Temporary File Security**: Protects API response temp files with 600 permissions
 
 </details>
-
-### 📝 Full Korean Support
-
-- Korean README and installation guide
-- Korean command explanations (`ZSH_AI_LANG="KO"`)
-- Korean error messages (planned for future release)
 
 ---
 
@@ -432,21 +420,6 @@ zsh-ai-helper/
 
 ---
 
-## 📊 Comparison with Original Project
-
-| Feature | Original (zsh-ai) | This Project (zsh-ai-helper) |
-|:---:|:---:|:---:|
-| **Basic Features** | ✅ | ✅ |
-| **Multiple AI Providers** | ✅ | ✅ |
-| **Command Explanation** | ✅ | ✅ |
-| **Dangerous Command Detection** | ❌ | ✅ **20+ patterns** |
-| **Detailed Error Messages** | ❌ | ✅ **cURL/HTTP error guidance** |
-| **API Key Security** | ⚠️ Partial | ✅ **Process exposure prevention** |
-| **File Permission Verification** | ❌ | ✅ **.env auto-check** |
-| **Korean Documentation** | ❌ | ✅ **Full Korean support** |
-
----
-
 ## 🤝 Contributing
 
 If you'd like to contribute to project improvement:
@@ -463,24 +436,15 @@ For details, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 📄 License
 
-Distributed under MIT License. See [LICENSE](LICENSE) file for details.
+MIT License - See [LICENSE](LICENSE) file for details.
 
-**Copyright (c) 2024**
-- Original project: [zsh-ai](https://github.com/matheusml/zsh-ai) by Matheus Lao
-- Fork and enhancements: Bae Chang Hyun
+Copyright (c) 2024-present Bae Chang Hyun
 
 ---
 
 ## 🙏 Acknowledgments
 
-This project is based on [matheusml/zsh-ai](https://github.com/matheusml/zsh-ai). Thanks to the original author and contributors for sharing an excellent open-source project.
-
-### Key Enhancements
-
-- Automatic dangerous command detection system
-- User-friendly error messages
-- Enhanced security (API key protection, file permission verification)
-- Complete Korean documentation
+This project is based on [zsh-ai](https://github.com/matheusml/zsh-ai) by Matheus Lao. Thanks to the original author and contributors for the foundation.
 
 ---
 
