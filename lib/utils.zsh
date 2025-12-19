@@ -159,12 +159,7 @@ _zsh_ai_debug_log() {
     local plugin_dir="${ZSH_AI_PLUGIN_DIR:-${0:A:h:h}}"
     local log_file="${plugin_dir}/zsh-ai-debug.log"
 
-    # Get current timestamp
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-
-    # Append to log file
-    echo "" >> "$log_file"
-    echo "=== [$timestamp] ===" >> "$log_file"
+    # Append to log file (no extra formatting, just the message)
     echo "$@" >> "$log_file"
 }
 
@@ -469,14 +464,6 @@ _zsh_ai_execute_command() {
     # Get JSON response from LLM
     local llm_response=$(_zsh_ai_query "$clean_query" "$has_explanation")
 
-    # Debug logging (only if ZSH_AI_DEV is set)
-    if [[ -n "$ZSH_AI_DEV" ]]; then
-        _zsh_ai_debug_log "Query: $clean_query"
-        _zsh_ai_debug_log "Has Explanation: $has_explanation"
-        _zsh_ai_debug_log "LLM Response (raw):"
-        _zsh_ai_debug_log "$llm_response"
-    fi
-
     # Check for error in raw response
     if [[ "$llm_response" == "Error:"* ]]; then
         echo "$llm_response"
@@ -494,11 +481,12 @@ _zsh_ai_execute_command() {
     local explanation="$_ZSH_AI_EXPLANATION"
     local warning="$_ZSH_AI_WARNING"
 
-    # Debug logging for parsed values
+    # Debug logging (only if ZSH_AI_DEV is set) - 3 lines total
     if [[ -n "$ZSH_AI_DEV" ]]; then
-        _zsh_ai_debug_log "Parsed Command: $cmd"
-        _zsh_ai_debug_log "Parsed Explanation: $explanation"
-        _zsh_ai_debug_log "Parsed Warning: $warning"
+        local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+        _zsh_ai_debug_log "[${timestamp}] Query(--e=$has_explanation): $clean_query"
+        _zsh_ai_debug_log "LLM Raw: $llm_response"
+        _zsh_ai_debug_log "Parsed: cmd='$cmd' | exp='$explanation' | warn='$warning'"
     fi
 
     # Fallback safety check: If LLM didn't provide warning, check with regex patterns
