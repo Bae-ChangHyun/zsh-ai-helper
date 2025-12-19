@@ -53,23 +53,30 @@
     - config.zsh: Linux/macOS 호환 권한 체크 추가
   - [x] P0-3: 임시 파일 권한 명시
     - widget.zsh: chmod 600 명시적 추가
-- [ ] Phase 2: Code Quality Improvements (P1)
-  - [ ] P1-1: JSON 파싱 로직 통합
-  - [ ] P1-2: 설정값 커스터마이징
-  - [ ] P1-3: 에러 메시지 표준화
+- [x] Phase 2: Code Quality Improvements (P1) ✅ **완료**
+  - [x] P1-1: JSON 파싱 로직 통합
+    - utils.zsh: `_zsh_ai_parse_response()` 공통 함수 추가
+    - anthropic.zsh, openai.zsh, gemini.zsh, ollama.zsh: ~160줄 중복 코드 제거
+  - [x] P1-2: 설정값 커스터마이징
+    - config.zsh: `ZSH_AI_MAX_TOKENS`, `ZSH_AI_TEMPERATURE` 환경변수 추가
+    - 모든 providers: 하드코딩된 값을 환경변수로 교체
+    - ollama.zsh: `num_predict` 파라미터 추가
+  - [x] P1-3: 에러 메시지 표준화
+    - utils.zsh: `_zsh_ai_error()` 공통 함수 추가
+    - 모든 providers: 일관된 에러 포맷 적용 (`Error: [provider] message`)
 - [ ] Phase 3: Documentation Cleanup
   - [ ] temp.md -> docs/ROADMAP.md 이관
 
 ## 메모
 - 각 Phase는 독립적인 커밋으로 관리
 - ✅ Phase 1 완료 - 보안 취약점 모두 해결
-- 수정된 파일 (5개):
-  - lib/providers/anthropic.zsh
-  - lib/providers/openai.zsh
-  - lib/providers/gemini.zsh
-  - lib/config.zsh
-  - lib/widget.zsh
-- Phase 1 커밋 후 Phase 2 진행 예정
+- ✅ Phase 2 완료 - 코드 품질 대폭 개선
+- 수정된 파일:
+  - Phase 1 (6개): providers 4개, config.zsh, widget.zsh, docs/todo.md
+  - Phase 2 (6개): utils.zsh, providers 4개, config.zsh
+- 코드 감소: ~160줄의 중복 코드 제거 (JSON 파싱)
+- 새 기능: max_tokens, temperature 사용자 설정 가능
+- Phase 2 커밋 후 Phase 3 진행 예정
 - 모든 변경사항은 기존 기능 유지하며 개선만 수행
 - 테스트: 각 provider별 수동 테스트 필요
 

@@ -124,6 +124,8 @@ _zsh_ai_load_prompt
 : ${ZSH_AI_TIMEOUT:=30}
 : ${ZSH_AI_PREFIX:="# "}
 : ${ZSH_AI_LANG:="EN"}
+: ${ZSH_AI_MAX_TOKENS:=256}
+: ${ZSH_AI_TEMPERATURE:=0.3}
 
 # Provider validation
 _zsh_ai_validate_config() {

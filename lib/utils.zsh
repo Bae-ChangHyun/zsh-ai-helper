@@ -33,6 +33,76 @@ _zsh_ai_validate_json() {
     return 0  # Skip validation if jq not available
 }
 
+# Standardized error message formatter
+# Usage: _zsh_ai_error "provider_name" "error_message"
+_zsh_ai_error() {
+    local provider="$1"
+    local message="$2"
+    echo "Error: [$provider] $message"
+}
+
+# Common JSON response parser for all providers
+# Usage: _zsh_ai_parse_response "$response" "$jq_path" "$fallback_field"
+# Example: _zsh_ai_parse_response "$response" ".content[0].text" "text"
+_zsh_ai_parse_response() {
+    local response="$1"
+    local jq_path="$2"
+    local fallback_field="$3"
+
+    # Try using jq if available
+    if command -v jq &> /dev/null; then
+        local result=$(echo "$response" | jq -r "${jq_path} // empty" 2>/dev/null)
+        if [[ -z "$result" ]]; then
+            # Check for error message
+            local error=$(echo "$response" | jq -r '.error.message // .error // empty' 2>/dev/null)
+            if [[ -n "$error" ]]; then
+                echo "Error: $error"
+            else
+                # Show truncated response for debugging
+                local preview="${response:0:200}"
+                [[ ${#response} -gt 200 ]] && preview="${preview}..."
+                echo "Error: Failed to parse API response"
+                echo "Response preview: $preview"
+            fi
+            return 1
+        fi
+        # Clean up the response - remove newlines and trailing whitespace
+        result=$(echo "$result" | tr -d '\n' | sed 's/[[:space:]]*$//')
+        echo "$result"
+    else
+        # Fallback parsing without jq
+        local result=$(echo "$response" | sed -n "s/.*\"${fallback_field}\":\"\\([^\"]*\\)\".*/\\1/p" | head -1)
+
+        # If simple extraction failed, try complex approach for multiline responses
+        if [[ -z "$result" ]]; then
+            result=$(echo "$response" | perl -0777 -ne "print \$1 if /\"${fallback_field}\":\"((?:[^\"\\\\]|\\\\.)*)\"/" 2>/dev/null)
+        fi
+
+        if [[ -z "$result" ]]; then
+            # Check for API error in response
+            if [[ "$response" == *'"error"'* ]]; then
+                local error_msg=$(echo "$response" | sed -n 's/.*"message":"\([^"]*\)".*/\1/p' | head -1)
+                if [[ -n "$error_msg" ]]; then
+                    echo "Error: $error_msg"
+                    return 1
+                fi
+            fi
+            # Show truncated response for debugging
+            local preview="${response:0:200}"
+            [[ ${#response} -gt 200 ]] && preview="${preview}..."
+            echo "Error: Failed to parse API response (install jq for better reliability)"
+            echo "Response preview: $preview"
+            return 1
+        fi
+
+        # Unescape JSON string (handle \n, \t, etc.) and clean up
+        result=$(echo "$result" | sed 's/\\n/\n/g; s/\\t/\t/g; s/\\r/\r/g; s/\\"/"/g; s/\\\\/\\/g')
+        # Remove trailing newlines and spaces
+        result=$(echo "$result" | sed 's/[[:space:]]*$//')
+        echo "$result"
+    fi
+}
+
 # Function to merge extra kwargs into JSON payload
 # Takes base JSON and merges ZSH_AI_EXTRA_KWARGS into it
 _zsh_ai_merge_extra_kwargs() {

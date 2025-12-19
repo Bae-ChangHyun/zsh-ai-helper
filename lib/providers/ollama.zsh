@@ -65,7 +65,8 @@ _zsh_ai_query_ollama() {
     "stream": false,
     "think": false,
     "options": {
-        "temperature": 0.3
+        "temperature": $ZSH_AI_TEMPERATURE,
+        "num_predict": $ZSH_AI_MAX_TOKENS
     }
 }
 EOF
@@ -80,63 +81,10 @@ EOF
         --data "$json_payload")
     
     if [[ $? -ne 0 ]]; then
-        echo "Error: Failed to connect to Ollama. Is it running?"
+        _zsh_ai_error "ollama" "Failed to connect to Ollama. Is it running?"
         return 1
     fi
-    
-    # Extract the response
-    if command -v jq &> /dev/null; then
-        local result=$(echo "$response" | jq -r '.response // empty' 2>/dev/null)
-        if [[ -z "$result" ]]; then
-            # Check for error message
-            local error=$(echo "$response" | jq -r '.error // empty' 2>/dev/null)
-            if [[ -n "$error" ]]; then
-                echo "Error: $error"
-            else
-                # Show truncated response for debugging
-                local preview="${response:0:200}"
-                [[ ${#response} -gt 200 ]] && preview="${preview}..."
-                echo "Error: Failed to parse API response"
-                echo "Response preview: $preview"
-            fi
-            return 1
-        fi
-        # Clean up the response - remove newlines and trailing whitespace
-        # Commands should be single-line for shell execution
-        result=$(echo "$result" | tr -d '\n' | sed 's/[[:space:]]*$//')
-        echo "$result"
-    else
-        # Fallback parsing without jq - handle responses with newlines
-        # Use sed to extract the response field, handling potential newlines
-        local result=$(echo "$response" | sed -n 's/.*"response":"\([^"]*\)".*/\1/p' | head -1)
-        
-        # If the simple extraction failed, try a more complex approach for multiline responses
-        if [[ -z "$result" ]]; then
-            # Extract response field even if it contains escaped newlines
-            result=$(echo "$response" | perl -0777 -ne 'print $1 if /"response":"((?:[^"\\]|\\.)*)"/s' 2>/dev/null)
-        fi
-        
-        if [[ -z "$result" ]]; then
-            # Check for API error in response
-            if [[ "$response" == *'"error"'* ]]; then
-                local error_msg=$(echo "$response" | sed -n 's/.*"error":"\([^"]*\)".*/\1/p' | head -1)
-                if [[ -n "$error_msg" ]]; then
-                    echo "Error: $error_msg"
-                    return 1
-                fi
-            fi
-            # Show truncated response for debugging
-            local preview="${response:0:200}"
-            [[ ${#response} -gt 200 ]] && preview="${preview}..."
-            echo "Error: Failed to parse API response (install jq for better reliability)"
-            echo "Response preview: $preview"
-            return 1
-        fi
 
-        # Unescape JSON string (handle \n, \t, etc.) and clean up
-        result=$(echo "$result" | sed 's/\\n/\n/g; s/\\t/\t/g; s/\\r/\r/g; s/\\"/"/g; s/\\\\/\\/g')
-        # Remove trailing newlines and spaces
-        result=$(echo "$result" | sed 's/[[:space:]]*$//')
-        echo "$result"
-    fi
+    # Parse response using common parser
+    _zsh_ai_parse_response "$response" ".response" "response"
 }
