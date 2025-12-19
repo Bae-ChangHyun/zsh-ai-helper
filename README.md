@@ -13,6 +13,17 @@ Smart command-line assistant with enhanced safety features and error handling
 [![Size](https://img.shields.io/badge/Size-~5KB-orange?style=flat-square)](#)
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS-lightgrey?style=flat-square)](#)
 
+
+<div align="center">
+
+![ZSH](https://img.shields.io/badge/Shell-ZSH-89e051?style=for-the-badge&logo=zsh&logoColor=white)
+![cURL](https://img.shields.io/badge/HTTP-cURL-073551?style=for-the-badge&logo=curl&logoColor=white)
+![Anthropic](https://img.shields.io/badge/AI-Anthropic%20Claude-181818?style=for-the-badge)
+![OpenAI](https://img.shields.io/badge/AI-OpenAI%20GPT-412991?style=for-the-badge&logo=openai&logoColor=white)
+![Gemini](https://img.shields.io/badge/AI-Google%20Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)
+
+</div>
+
 [한국어](README.ko.md) • [Documentation](docs/)
 
 </div>
@@ -72,11 +83,12 @@ $ mkfs.ext4 /dev/sda  # ⚠️  WARNING: Formatting will permanently erase all d
 | Feature | Description |
 |:---|:---|
 | **Zero Dependencies** | Pure ZSH script (~5KB), only requires `curl` |
-| **Multiple AI Providers** | Supports Anthropic Claude, OpenAI GPT, Google Gemini, Ollama (local) |
+| **Multiple AI Providers** | Supports Anthropic, OpenAI, Google, Ollama (local), OpenAI compatible |
 | **Context Aware** | Auto-detects project type, Git status, current directory |
 | **Command Explanation** | Provides explanations for generated commands with `--e` flag |
 | **Multilingual Support** | Supports 7 languages (EN, KO, JA, ZH, DE, FR, ES) |
-| **Customizable** | YAML-based prompt configuration and custom prefix support |
+| **Customizable** | Custom prefix support and configurable parameters |
+| **Debug Mode** | Detailed logging for troubleshooting with `ZSH_AI_DEV` |
 | **Korean Documentation** | Full Korean README and guides available |
 
 ### 🛡️ Safety & Security
@@ -173,7 +185,7 @@ If you're not using Oh My Zsh:
 git clone https://github.com/Bae-ChangHyun/zsh-ai-helper ~/.zsh-ai-helper
 
 # 2. Add the following line to ~/.zshrc
-source ~/.zsh-ai-helper/zsh-ai.plugin.zsh
+source ~/.zsh-ai-helper/zsh-ai-helper.plugin.zsh
 
 # 3. Create and edit config file
 cp ~/.zsh-ai-helper/.env.example ~/.zsh-ai-helper/.env
@@ -245,80 +257,11 @@ Configure your AI provider and API key in `.env` file:
 | **Gemini** | `GEMINI_API_KEY` | `gemini-2.5-flash` | 💰 Paid | Google's latest model |
 | **Ollama** | (none) | `llama3.2` | 🆓 Free | Local execution, no internet required |
 
-#### API Key Setup
-
-<details>
-<summary><strong>Anthropic Claude (Recommended)</strong></summary>
-
-1. Visit [Anthropic Console](https://console.anthropic.com/)
-2. Create new key in API Keys menu
-3. Configure in `.env` file:
-
-```bash
-ZSH_AI_PROVIDER=anthropic
-ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
-ANTHROPIC_MODEL=claude-haiku-4.5  # or claude-sonnet-4.5
-```
-
-</details>
-
-<details>
-<summary><strong>OpenAI GPT</strong></summary>
-
-1. Visit [OpenAI Platform](https://platform.openai.com/api-keys)
-2. Click "Create new secret key"
-3. Configure in `.env` file:
-
-```bash
-ZSH_AI_PROVIDER=openai
-OPENAI_API_KEY=sk-proj-xxxxx
-OPENAI_MODEL=gpt-4o  # or gpt-4o-mini
-```
-
-</details>
-
-<details>
-<summary><strong>Google Gemini</strong></summary>
-
-1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Generate API key
-3. Configure in `.env` file:
-
-```bash
-ZSH_AI_PROVIDER=gemini
-GEMINI_API_KEY=AIzaSyxxxxx
-GEMINI_MODEL=gemini-2.5-flash
-```
-
-</details>
-
-<details>
-<summary><strong>Ollama (Local, Free)</strong></summary>
-
-1. Install [Ollama](https://ollama.ai/)
-2. Download model:
-
-```bash
-ollama pull llama3.2
-# or other models
-ollama pull codellama
-```
-
-3. Configure in `.env` file:
-
-```bash
-ZSH_AI_PROVIDER=ollama
-OLLAMA_MODEL=llama3.2
-OLLAMA_BASE_URL=http://localhost:11434  # default
-```
-
-</details>
-
 ### Advanced Configuration
 
 #### Change Trigger Prefix (`ZSH_AI_PREFIX`)
 
-Use different prefix instead of default `#`:
+Use different prefix instead of default `# ` (must include trailing space)
 
 ```bash
 # .env file
@@ -361,61 +304,52 @@ ZSH_AI_EXTRA_KWARGS='{"temperature": 0.1}'
 ZSH_AI_EXTRA_KWARGS='{"temperature": 0.9, "top_p": 0.95}'
 ```
 
-### Custom Prompt Configuration
+#### Debug Mode (`ZSH_AI_DEV`)
 
-Edit `prompt.yaml` file to fine-tune AI behavior:
+Enable detailed logging for troubleshooting:
 
-```yaml
-system_prompt: |
-  You are a ZSH command generation expert.
-  Convert user's natural language requests into accurate ZSH commands.
-
-prompt_extend: |
-  - Commands must be executable
-  - Include warning comments for dangerous commands
-  - Prioritize efficient and concise commands
-
-explain_prompt: |
-  Briefly explain the generated command in {lang} language.
-  Write the explanation in one sentence, focusing on
-  'what the command does' rather than technical details.
+```bash
+# .env file
+ZSH_AI_DEV=true
 ```
+
+When enabled, the plugin logs to `zsh-ai-debug.log` in the plugin directory:
+- User query and timestamp
+- Raw LLM API response (full response, not truncated)
+- Parsed command, explanation, and warning values
+
+**Log format (3 lines per request):**
+```
+[2025-12-19 16:52:45] Query(--e=false): find large files
+LLM Raw: {"id":"chatcmpl-...","choices":[{"message":{"content":"..."}}]}
+Parsed: cmd='find . -size +100M' | exp='' | warn=''
+```
+
+This is useful for debugging JSON parsing issues or API response problems.
 
 ---
 
-## 💻 Tech Stack
-
-<div align="center">
-
-![ZSH](https://img.shields.io/badge/Shell-ZSH-89e051?style=for-the-badge&logo=zsh&logoColor=white)
-![cURL](https://img.shields.io/badge/HTTP-cURL-073551?style=for-the-badge&logo=curl&logoColor=white)
-![Anthropic](https://img.shields.io/badge/AI-Anthropic%20Claude-181818?style=for-the-badge)
-![OpenAI](https://img.shields.io/badge/AI-OpenAI%20GPT-412991?style=for-the-badge&logo=openai&logoColor=white)
-![Gemini](https://img.shields.io/badge/AI-Google%20Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)
-
-</div>
 
 ### Project Structure
 
 ```
 zsh-ai-helper/
-├── zsh-ai.plugin.zsh       # Plugin entry point
-├── .env.example            # Configuration template
-├── prompt.yaml             # AI prompt configuration
+├── zsh-ai-helper.plugin.zsh  # Plugin entry point
+├── .env.example              # Configuration template
 ├── lib/
-│   ├── config.zsh          # Configuration and .env loading
-│   ├── context.zsh         # Context detection (git, project type, OS)
-│   ├── utils.zsh           # Common utilities and main functions
-│   ├── widget.zsh          # ZLE widget (# syntax)
-│   ├── safety.zsh          # Dangerous command detection
+│   ├── config.zsh            # Configuration and .env loading
+│   ├── context.zsh           # Context detection (git, project type, OS)
+│   ├── utils.zsh             # Common utilities and main functions
+│   ├── widget.zsh            # ZLE widget (# syntax)
+│   ├── safety.zsh            # Dangerous command detection
 │   └── providers/
-│       ├── anthropic.zsh   # Anthropic Claude API
-│       ├── openai.zsh      # OpenAI GPT API
-│       ├── gemini.zsh      # Google Gemini API
-│       └── ollama.zsh      # Ollama local API
+│       ├── anthropic.zsh     # Anthropic Claude API
+│       ├── openai.zsh        # OpenAI GPT API
+│       ├── gemini.zsh        # Google Gemini API
+│       └── ollama.zsh        # Ollama local API
 └── docs/
-    ├── README.ko.md        # Korean documentation
-    └── ROADMAP.md          # Project roadmap
+    ├── README.ko.md          # Korean documentation
+    └── ROADMAP.md            # Project roadmap
 ```
 
 ---
