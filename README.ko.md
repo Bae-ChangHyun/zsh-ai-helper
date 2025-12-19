@@ -13,6 +13,17 @@
 [![Size](https://img.shields.io/badge/Size-~5KB-orange?style=flat-square)](#)
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS-lightgrey?style=flat-square)](#)
 
+<div align="center">
+
+![ZSH](https://img.shields.io/badge/Shell-ZSH-89e051?style=for-the-badge&logo=zsh&logoColor=white)
+![cURL](https://img.shields.io/badge/HTTP-cURL-073551?style=for-the-badge&logo=curl&logoColor=white)
+![Anthropic](https://img.shields.io/badge/AI-Anthropic%20Claude-181818?style=for-the-badge)
+![OpenAI](https://img.shields.io/badge/AI-OpenAI%20GPT-412991?style=for-the-badge&logo=openai&logoColor=white)
+![Gemini](https://img.shields.io/badge/AI-Google%20Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)
+
+</div>
+
+
 [English](README.md) • [문서 보기](docs/)
 
 </div>
@@ -72,11 +83,12 @@ $ mkfs.ext4 /dev/sda  # ⚠️  WARNING: 디스크를 포맷하면 모든 데이
 | 기능 | 설명 |
 |:---|:---|
 | **제로 의존성** | 순수 ZSH 스크립트 (~5KB), `curl`만 필요 |
-| **다중 AI 프로바이더** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama (로컬) 지원 |
+| **다중 AI 프로바이더** | Anthropic, OpenAI, Google, Ollama (로컬), OpenAI compatible 지원 |
 | **컨텍스트 인식** | 프로젝트 타입, Git 상태, 현재 디렉토리 자동 감지 |
 | **명령어 설명** | `--e` 플래그로 생성된 명령어에 대한 설명 제공 |
 | **다국어 지원** | 7개 언어 지원 (EN, KO, JA, ZH, DE, FR, ES) |
-| **커스터마이징** | YAML 기반 프롬프트 설정 및 커스텀 접두사 지원 |
+| **커스터마이징** | 커스텀 접두사 지원 및 설정 가능한 파라미터 |
+| **디버그 모드** | `ZSH_AI_DEV`로 상세한 로깅 제공 |
 | **한국어 문서** | 완전한 한국어 README 및 가이드 제공 |
 
 ### 🛡️ 안전 및 보안
@@ -173,7 +185,7 @@ Oh My Zsh를 사용하지 않는 경우:
 git clone https://github.com/Bae-ChangHyun/zsh-ai-helper ~/.zsh-ai-helper
 
 # 2. ~/.zshrc에 다음 라인 추가
-source ~/.zsh-ai-helper/zsh-ai.plugin.zsh
+source ~/.zsh-ai-helper/zsh-ai-helper.plugin.zsh
 
 # 3. 설정 파일 생성 및 편집
 cp ~/.zsh-ai-helper/.env.example ~/.zsh-ai-helper/.env
@@ -240,86 +252,17 @@ $ free -h  # 시스템의 메모리 사용 현황을 사람이 읽기 쉬운 형
 
 | 프로바이더 | API 키 변수명 | 기본 모델 | 비용 | 특징 |
 |:---:|:---:|:---:|:---:|:---|
+| **OpenAI(openai api 호환)** | `OPENAI_API_KEY` | `gpt-4o` | 💰 유료 | 범용성 우수 |
 | **Anthropic** | `ANTHROPIC_API_KEY` | `claude-haiku-4.5` | 💰 유료 | 빠르고 정확, 권장 |
-| **OpenAI** | `OPENAI_API_KEY` | `gpt-4o` | 💰 유료 | 범용성 우수 |
 | **Gemini** | `GEMINI_API_KEY` | `gemini-2.5-flash` | 💰 유료 | Google의 최신 모델 |
 | **Ollama** | (없음) | `llama3.2` | 🆓 무료 | 로컬 실행, 인터넷 불필요 |
 
-#### API 키 발급 방법
-
-<details>
-<summary><strong>Anthropic Claude (권장)</strong></summary>
-
-1. [Anthropic Console](https://console.anthropic.com/) 접속
-2. API Keys 메뉴에서 새 키 생성
-3. `.env` 파일에 설정:
-
-```bash
-ZSH_AI_PROVIDER=anthropic
-ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
-ANTHROPIC_MODEL=claude-haiku-4.5  # 또는 claude-sonnet-4.5
-```
-
-</details>
-
-<details>
-<summary><strong>OpenAI GPT</strong></summary>
-
-1. [OpenAI Platform](https://platform.openai.com/api-keys) 접속
-2. "Create new secret key" 클릭
-3. `.env` 파일에 설정:
-
-```bash
-ZSH_AI_PROVIDER=openai
-OPENAI_API_KEY=sk-proj-xxxxx
-OPENAI_MODEL=gpt-4o  # 또는 gpt-4o-mini
-```
-
-</details>
-
-<details>
-<summary><strong>Google Gemini</strong></summary>
-
-1. [Google AI Studio](https://makersuite.google.com/app/apikey) 접속
-2. API 키 생성
-3. `.env` 파일에 설정:
-
-```bash
-ZSH_AI_PROVIDER=gemini
-GEMINI_API_KEY=AIzaSyxxxxx
-GEMINI_MODEL=gemini-2.5-flash
-```
-
-</details>
-
-<details>
-<summary><strong>Ollama (로컬, 무료)</strong></summary>
-
-1. [Ollama](https://ollama.ai/) 설치
-2. 모델 다운로드:
-
-```bash
-ollama pull llama3.2
-# 또는 다른 모델
-ollama pull codellama
-```
-
-3. `.env` 파일에 설정:
-
-```bash
-ZSH_AI_PROVIDER=ollama
-OLLAMA_MODEL=llama3.2
-OLLAMA_BASE_URL=http://localhost:11434  # 기본값
-```
-
-</details>
 
 ### 고급 설정 옵션
 
 #### 트리거 접두사 변경 (`ZSH_AI_PREFIX`)
 
-기본 `#` 대신 다른 접두사 사용:
-
+기본 `#` 대신 다른 접두사 사용, 반드시 뒤에 공백 포함해야 함
 ```bash
 # .env 파일
 ZSH_AI_PREFIX="? "    # 사용: ? 파이썬 파일 찾기
@@ -361,63 +304,32 @@ ZSH_AI_EXTRA_KWARGS='{"temperature": 0.1}'
 ZSH_AI_EXTRA_KWARGS='{"temperature": 0.9, "top_p": 0.95}'
 ```
 
-### 커스텀 프롬프트 설정
+#### 디버그 모드 (`ZSH_AI_DEV`)
 
-`prompt.yaml` 파일을 편집하여 AI의 동작 방식을 세밀하게 조정:
+문제 해결을 위한 상세 로깅 활성화:
 
-```yaml
-system_prompt: |
-  당신은 ZSH 명령어 생성 전문가입니다.
-  사용자의 자연어 요청을 정확한 ZSH 명령어로 변환하세요.
-
-prompt_extend: |
-  - 명령어는 반드시 실행 가능해야 합니다
-  - 위험한 명령어는 경고 주석을 포함하세요
-  - 효율적이고 간결한 명령어를 우선하세요
-
-explain_prompt: |
-  생성된 명령어를 {lang} 언어로 간단히 설명하세요.
-  설명은 한 문장으로 작성하고, 기술적 세부사항보다는
-  명령어가 '무엇을 하는지'에 집중하세요.
+```bash
+# .env 파일
+ZSH_AI_DEV=true
 ```
+
+활성화하면 플러그인 디렉토리의 `zsh-ai-debug.log` 파일에 다음 정보가 기록됩니다:
+- 사용자 쿼리 및 타임스탬프
+- 원본 LLM API 응답 (잘리지 않은 전체 응답)
+- 파싱된 명령어, 설명, 경고 값
+
+**로그 형식 (요청당 3줄):**
+```
+[2025-12-19 16:52:45] Query(--e=false): 큰 파일 찾기
+LLM Raw: {"id":"chatcmpl-...","choices":[{"message":{"content":"..."}}]}
+Parsed: cmd='find . -size +100M' | exp='' | warn=''
+```
+
+JSON 파싱 문제나 API 응답 이슈 디버깅에 유용합니다.
 
 ---
 
-## 💻 기술 스택
 
-<div align="center">
-
-![ZSH](https://img.shields.io/badge/Shell-ZSH-89e051?style=for-the-badge&logo=zsh&logoColor=white)
-![cURL](https://img.shields.io/badge/HTTP-cURL-073551?style=for-the-badge&logo=curl&logoColor=white)
-![Anthropic](https://img.shields.io/badge/AI-Anthropic%20Claude-181818?style=for-the-badge)
-![OpenAI](https://img.shields.io/badge/AI-OpenAI%20GPT-412991?style=for-the-badge&logo=openai&logoColor=white)
-![Gemini](https://img.shields.io/badge/AI-Google%20Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)
-
-</div>
-
-### 프로젝트 구조
-
-```
-zsh-ai-helper/
-├── zsh-ai.plugin.zsh       # 플러그인 진입점
-├── .env.example            # 설정 템플릿
-├── prompt.yaml             # AI 프롬프트 설정
-├── lib/
-│   ├── config.zsh          # 설정 및 .env 로딩
-│   ├── context.zsh         # 컨텍스트 감지 (git, 프로젝트 타입, OS)
-│   ├── utils.zsh           # 공통 유틸리티 및 메인 함수
-│   ├── widget.zsh          # ZLE 위젯 (# 문법)
-│   └── providers/
-│       ├── anthropic.zsh   # Anthropic Claude API
-│       ├── openai.zsh      # OpenAI GPT API
-│       ├── gemini.zsh      # Google Gemini API
-│       └── ollama.zsh      # Ollama 로컬 API
-└── docs/
-    ├── README.ko.md        # 한국어 문서
-    └── ROADMAP.md          # 프로젝트 로드맵
-```
-
----
 
 ## 🤝 기여하기
 
