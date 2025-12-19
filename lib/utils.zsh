@@ -359,16 +359,15 @@ _zsh_ai_merge_extra_kwargs() {
         return
     fi
 
-    # Validate extra kwargs JSON before using
-    if ! _zsh_ai_validate_json "$ZSH_AI_EXTRA_KWARGS"; then
-        echo "Warning: ZSH_AI_EXTRA_KWARGS is not valid JSON, ignoring" >&2
-        printf '%s' "$base_json"
-        return
-    fi
-
     # Use jq if available for proper JSON merge
     # Use -c for compact output to preserve escaped characters
     if command -v jq &> /dev/null; then
+        # Validate extra kwargs JSON with jq, ignore if invalid
+        if ! printf '%s' "$ZSH_AI_EXTRA_KWARGS" | jq . >/dev/null 2>&1; then
+            echo "Warning: ZSH_AI_EXTRA_KWARGS is not valid JSON, ignoring" >&2
+            printf '%s' "$base_json"
+            return
+        fi
         printf '%s' "$base_json" | jq -c --argjson extra "$ZSH_AI_EXTRA_KWARGS" '. * $extra' 2>/dev/null || printf '%s' "$base_json"
     else
         # Fallback: simple string manipulation for common cases
