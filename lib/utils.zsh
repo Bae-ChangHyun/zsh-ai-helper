@@ -68,17 +68,7 @@ _zsh_ai_escape_json() {
     printf '%s' "$1" | perl -0777 -pe 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g; s/\r/\\r/g; s/\n/\\n/g; s/\f/\\f/g; s/\x08/\\b/g; s/[\x00-\x07\x0B\x0E-\x1F]//g'
 }
 
-# Validate JSON string
-_zsh_ai_validate_json() {
-    local json="$1"
-    if command -v jq &> /dev/null; then
-        echo "$json" | jq . >/dev/null 2>&1
-        return $?
-    fi
-    return 0  # Skip validation if jq not available
-}
-
-# Fix common JSON formatting issues
+# Fix common JSON formatting issues before parsing
 _zsh_ai_fix_json() {
     local broken_json="$1"
 
@@ -91,59 +81,82 @@ _zsh_ai_fix_json() {
     # Remove trailing commas before closing braces/brackets
     broken_json=$(echo "$broken_json" | sed 's/,[[:space:]]*}/}/g; s/,[[:space:]]*\]/]/g')
 
-    # Try to fix common escaping issues (simple cases only)
-    # This is conservative - we don't want to break valid JSON
-
     echo "$broken_json"
 }
 
-# Parse LLM's JSON response and extract fields
+# Parse JSON with Python (fallback when jq is not available)
+_zsh_ai_parse_json_python() {
+    local json="$1"
+    local field="$2"
+
+    # Use printf to avoid heredoc issues with special characters
+    printf '%s' "$json" | python3 -c "
+import json
+import sys
+try:
+    data = json.loads(sys.stdin.read())
+    value = data.get('$field', '')
+    if value is None:
+        value = ''
+    print(value, end='')
+except Exception as e:
+    sys.exit(1)
+" 2>/dev/null
+}
+
+# Parse LLM's response - try JSON first, then simple text extraction
 # Returns: Sets global variables _ZSH_AI_CMD, _ZSH_AI_EXPLANATION, _ZSH_AI_WARNING
 _zsh_ai_parse_llm_json() {
     local content="$1"
 
-    # Initialize return variables
+    # Initialize
     _ZSH_AI_CMD=""
     _ZSH_AI_EXPLANATION=""
     _ZSH_AI_WARNING=""
 
-    # Try to validate JSON first
-    if ! _zsh_ai_validate_json "$content"; then
-        # Try to fix common JSON issues
-        content=$(_zsh_ai_fix_json "$content")
+    # Unescape the content first to make it easier to parse
+    local unescaped=$(printf '%s' "$content" | sed 's/\\n/ /g; s/\\t/ /g; s/\\r//g; s/\\"/"/g; s/\\\\/\\/g')
 
-        # Validate again after fix
-        if ! _zsh_ai_validate_json "$content"; then
-            # JSON parsing failed - try regex fallback
-            _ZSH_AI_CMD=$(echo "$content" | sed -n 's/.*"command"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
-            if [[ -z "$_ZSH_AI_CMD" ]]; then
-                echo "Error: Failed to parse JSON response from LLM"
-                return 1
-            fi
-            # Try to extract warning/explanation with regex
-            _ZSH_AI_WARNING=$(echo "$content" | sed -n 's/.*"warning"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
-            _ZSH_AI_EXPLANATION=$(echo "$content" | sed -n 's/.*"explanation"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
-            return 0
-        fi
+    # Try jq first (if available and content looks like JSON)
+    if command -v jq &> /dev/null && [[ "$unescaped" == "{"* ]]; then
+        _ZSH_AI_CMD=$(printf '%s' "$unescaped" | jq -r '.command // empty' 2>/dev/null)
+        _ZSH_AI_WARNING=$(printf '%s' "$unescaped" | jq -r '.warning // empty' 2>/dev/null)
+        _ZSH_AI_EXPLANATION=$(printf '%s' "$unescaped" | jq -r '.explanation // empty' 2>/dev/null)
+
+        # Clean up
+        [[ "$_ZSH_AI_WARNING" == "null" || "$_ZSH_AI_WARNING" == "" ]] && _ZSH_AI_WARNING=""
+        [[ "$_ZSH_AI_EXPLANATION" == "null" || "$_ZSH_AI_EXPLANATION" == "" ]] && _ZSH_AI_EXPLANATION=""
     fi
 
-    # JSON is valid, parse with jq if available
-    if command -v jq &> /dev/null; then
-        _ZSH_AI_CMD=$(echo "$content" | jq -r '.command // empty' 2>/dev/null)
-        _ZSH_AI_WARNING=$(echo "$content" | jq -r '.warning // empty' 2>/dev/null)
-        _ZSH_AI_EXPLANATION=$(echo "$content" | jq -r '.explanation // empty' 2>/dev/null)
-
-        # Convert "null" string to empty
-        [[ "$_ZSH_AI_WARNING" == "null" ]] && _ZSH_AI_WARNING=""
-        [[ "$_ZSH_AI_EXPLANATION" == "null" ]] && _ZSH_AI_EXPLANATION=""
-    else
-        # Fallback: Use sed/grep to extract fields
-        _ZSH_AI_CMD=$(echo "$content" | sed -n 's/.*"command"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
-        _ZSH_AI_WARNING=$(echo "$content" | sed -n 's/.*"warning"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
-        _ZSH_AI_EXPLANATION=$(echo "$content" | sed -n 's/.*"explanation"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+    # If jq failed, extract directly from text (ignoring JSON validity)
+    if [[ -z "$_ZSH_AI_CMD" ]]; then
+        # Match from "command":" to "warning or "explanation field
+        _ZSH_AI_CMD=$(printf '%s' "$unescaped" | perl -0777 -ne '
+            if (/"command"\s*:\s*"(.*?)"\s*,\s*"(?:warning|explanation)/) {
+                print $1;
+            }
+        ')
     fi
 
-    # Validate that we got at least a command
+    # Extract warning if not already extracted
+    if [[ -z "$_ZSH_AI_WARNING" ]]; then
+        _ZSH_AI_WARNING=$(printf '%s' "$unescaped" | perl -0777 -ne '
+            if (/"warning"\s*:\s*"(.*?)"/) {
+                print $1 unless $1 eq "null";
+            }
+        ')
+    fi
+
+    # Extract explanation if not already extracted
+    if [[ -z "$_ZSH_AI_EXPLANATION" ]]; then
+        _ZSH_AI_EXPLANATION=$(printf '%s' "$unescaped" | perl -0777 -ne '
+            if (/"explanation"\s*:\s*"(.*?)"/) {
+                print $1 unless $1 eq "null";
+            }
+        ')
+    fi
+
+    # Validate
     if [[ -z "$_ZSH_AI_CMD" ]]; then
         echo "Error: No command found in LLM response"
         return 1
@@ -274,55 +287,64 @@ _zsh_ai_parse_response() {
 
     # Try using jq if available
     if command -v jq &> /dev/null; then
-        local result=$(echo "$response" | jq -r "${jq_path} // empty" 2>/dev/null)
-        if [[ -z "$result" ]]; then
+        # Extract the content field (returns as JSON string with quotes)
+        local result=$(printf '%s' "$response" | jq "${jq_path} // empty" 2>/dev/null)
+        if [[ -z "$result" || "$result" == "null" ]]; then
             # Check for error message
-            local error=$(echo "$response" | jq -r '.error.message // .error // empty' 2>/dev/null)
+            local error=$(printf '%s' "$response" | jq -r '.error.message // .error // empty' 2>/dev/null)
             if [[ -n "$error" ]]; then
                 echo "Error: $error"
             else
-                # Show truncated response for debugging
-                local preview="${response:0:200}"
-                [[ ${#response} -gt 200 ]] && preview="${preview}..."
                 echo "Error: Failed to parse API response"
-                echo "Response preview: $preview"
+                # In dev mode, show full response; otherwise truncate
+                if [[ -n "$ZSH_AI_DEV" ]]; then
+                    echo "Response (full): $response"
+                else
+                    local preview="${response:0:200}"
+                    [[ ${#response} -gt 200 ]] && preview="${preview}..."
+                    echo "Response preview: $preview"
+                fi
             fi
             return 1
         fi
-        # Clean up the response - convert newlines to spaces, remove trailing whitespace
-        result=$(echo "$result" | tr '\n' ' ' | sed 's/[[:space:]]*$//; s/[[:space:]]\{2,\}/ /g')
-        echo "$result"
+        # Remove outer quotes only (keep escaped content as-is)
+        result=$(printf '%s' "$result" | sed 's/^"//; s/"$//')
+        printf '%s\n' "$result"
     else
         # Fallback parsing without jq
-        local result=$(echo "$response" | sed -n "s/.*\"${fallback_field}\":\"\\([^\"]*\\)\".*/\\1/p" | head -1)
+        local result=$(printf '%s' "$response" | sed -n "s/.*\"${fallback_field}\":\"\\([^\"]*\\)\".*/\\1/p" | head -1)
 
         # If simple extraction failed, try complex approach for multiline responses
         if [[ -z "$result" ]]; then
-            result=$(echo "$response" | perl -0777 -ne "print \$1 if /\"${fallback_field}\":\"((?:[^\"\\\\]|\\\\.)*)\"/" 2>/dev/null)
+            result=$(printf '%s' "$response" | perl -0777 -ne "print \$1 if /\"${fallback_field}\":\"((?:[^\"\\\\]|\\\\.)*)\"/" 2>/dev/null)
         fi
 
         if [[ -z "$result" ]]; then
             # Check for API error in response
             if [[ "$response" == *'"error"'* ]]; then
-                local error_msg=$(echo "$response" | sed -n 's/.*"message":"\([^"]*\)".*/\1/p' | head -1)
+                local error_msg=$(printf '%s' "$response" | sed -n 's/.*"message":"\([^"]*\)".*/\1/p' | head -1)
                 if [[ -n "$error_msg" ]]; then
                     echo "Error: $error_msg"
                     return 1
                 fi
             fi
-            # Show truncated response for debugging
-            local preview="${response:0:200}"
-            [[ ${#response} -gt 200 ]] && preview="${preview}..."
             echo "Error: Failed to parse API response (install jq for better reliability)"
-            echo "Response preview: $preview"
+            # In dev mode, show full response; otherwise truncate
+            if [[ -n "$ZSH_AI_DEV" ]]; then
+                echo "Response (full): $response"
+            else
+                local preview="${response:0:200}"
+                [[ ${#response} -gt 200 ]] && preview="${preview}..."
+                echo "Response preview: $preview"
+            fi
             return 1
         fi
 
         # Unescape JSON string (handle \n, \t, etc.) and clean up
-        result=$(echo "$result" | sed 's/\\n/\n/g; s/\\t/\t/g; s/\\r/\r/g; s/\\"/"/g; s/\\\\/\\/g')
+        result=$(printf '%s' "$result" | sed 's/\\n/\n/g; s/\\t/\t/g; s/\\r/\r/g; s/\\"/"/g; s/\\\\/\\/g')
         # Remove trailing newlines and spaces
-        result=$(echo "$result" | sed 's/[[:space:]]*$//')
-        echo "$result"
+        result=$(printf '%s' "$result" | sed 's/[[:space:]]*$//')
+        printf '%s\n' "$result"
     fi
 }
 
@@ -469,6 +491,7 @@ _zsh_ai_execute_command() {
         local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
         _zsh_ai_debug_log "[${timestamp}] Query(--e=$has_explanation): $clean_query"
         _zsh_ai_debug_log "LLM Raw: $llm_response"
+        _zsh_ai_debug_log "#######################"
     fi
 
     # Check for error in raw response
