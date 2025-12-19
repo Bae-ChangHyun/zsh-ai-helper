@@ -464,8 +464,16 @@ _zsh_ai_execute_command() {
     # Get JSON response from LLM
     local llm_response=$(_zsh_ai_query "$clean_query" "$has_explanation")
 
+    # Debug logging line 1 & 2 (always log query and raw response)
+    if [[ -n "$ZSH_AI_DEV" ]]; then
+        local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+        _zsh_ai_debug_log "[${timestamp}] Query(--e=$has_explanation): $clean_query"
+        _zsh_ai_debug_log "LLM Raw: $llm_response"
+    fi
+
     # Check for error in raw response
     if [[ "$llm_response" == "Error:"* ]]; then
+        [[ -n "$ZSH_AI_DEV" ]] && _zsh_ai_debug_log "Parsed: FAILED - Error response"
         echo "$llm_response"
         return 1
     fi
@@ -473,6 +481,7 @@ _zsh_ai_execute_command() {
     # Parse JSON response
     if ! _zsh_ai_parse_llm_json "$llm_response"; then
         # Parsing failed - error message already printed by parser
+        [[ -n "$ZSH_AI_DEV" ]] && _zsh_ai_debug_log "Parsed: FAILED - JSON parse error"
         return 1
     fi
 
@@ -481,11 +490,8 @@ _zsh_ai_execute_command() {
     local explanation="$_ZSH_AI_EXPLANATION"
     local warning="$_ZSH_AI_WARNING"
 
-    # Debug logging (only if ZSH_AI_DEV is set) - 3 lines total
+    # Debug logging line 3 (parsed values)
     if [[ -n "$ZSH_AI_DEV" ]]; then
-        local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-        _zsh_ai_debug_log "[${timestamp}] Query(--e=$has_explanation): $clean_query"
-        _zsh_ai_debug_log "LLM Raw: $llm_response"
         _zsh_ai_debug_log "Parsed: cmd='$cmd' | exp='$explanation' | warn='$warning'"
     fi
 
