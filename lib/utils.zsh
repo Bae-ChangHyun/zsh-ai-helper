@@ -41,6 +41,99 @@ _zsh_ai_error() {
     echo "Error: [$provider] $message"
 }
 
+# Handle curl exit codes with specific error messages
+# Returns: error message string or empty if success
+_zsh_ai_handle_curl_error() {
+    local exit_code="$1"
+    local provider="$2"
+
+    case $exit_code in
+        0)
+            return 0  # Success
+            ;;
+        6)
+            _zsh_ai_error "$provider" "Could not resolve host. Check your internet connection and API URL."
+            return 1
+            ;;
+        7)
+            _zsh_ai_error "$provider" "Connection refused. The API server may be down or unreachable."
+            return 1
+            ;;
+        28)
+            _zsh_ai_error "$provider" "Request timed out after ${ZSH_AI_TIMEOUT}s. The server may be slow or unresponsive."
+            return 1
+            ;;
+        35)
+            _zsh_ai_error "$provider" "SSL/TLS connection error. Check your system's SSL certificates."
+            return 1
+            ;;
+        52)
+            _zsh_ai_error "$provider" "Empty response from server. The API may be misconfigured."
+            return 1
+            ;;
+        56)
+            _zsh_ai_error "$provider" "Connection reset. Network or server issue occurred."
+            return 1
+            ;;
+        *)
+            _zsh_ai_error "$provider" "Network request failed (curl error $exit_code)."
+            return 1
+            ;;
+    esac
+}
+
+# Handle HTTP status codes with specific error messages
+# Returns: error message string or empty if success (200-299)
+_zsh_ai_handle_http_error() {
+    local http_code="$1"
+    local provider="$2"
+
+    # Success codes (200-299)
+    if [[ "$http_code" -ge 200 && "$http_code" -lt 300 ]]; then
+        return 0
+    fi
+
+    # Error codes
+    case $http_code in
+        400)
+            _zsh_ai_error "$provider" "Bad request (HTTP 400). The request format may be invalid."
+            return 1
+            ;;
+        401)
+            _zsh_ai_error "$provider" "Authentication failed (HTTP 401). Check your API key in .env file."
+            return 1
+            ;;
+        403)
+            _zsh_ai_error "$provider" "Access forbidden (HTTP 403). Your API key may lack permissions."
+            return 1
+            ;;
+        404)
+            _zsh_ai_error "$provider" "API endpoint not found (HTTP 404). Check your API URL configuration."
+            return 1
+            ;;
+        429)
+            _zsh_ai_error "$provider" "Rate limit exceeded (HTTP 429). Please wait and try again."
+            return 1
+            ;;
+        500)
+            _zsh_ai_error "$provider" "Internal server error (HTTP 500). The API service is experiencing issues."
+            return 1
+            ;;
+        502)
+            _zsh_ai_error "$provider" "Bad gateway (HTTP 502). The API server is temporarily unavailable."
+            return 1
+            ;;
+        503)
+            _zsh_ai_error "$provider" "Service unavailable (HTTP 503). The API is temporarily down."
+            return 1
+            ;;
+        *)
+            _zsh_ai_error "$provider" "HTTP error $http_code occurred."
+            return 1
+            ;;
+    esac
+}
+
 # Common JSON response parser for all providers
 # Usage: _zsh_ai_parse_response "$response" "$jq_path" "$fallback_field"
 # Example: _zsh_ai_parse_response "$response" ".content[0].text" "text"
@@ -275,17 +368,23 @@ _zsh_ai_execute_command() {
     local cmd=$(_zsh_ai_query "$clean_query")
 
     if [[ -n "$cmd" ]] && [[ "$cmd" != "Error:"* ]]; then
-        # If --e flag was set, get explanation and format output
-        if [[ $explain_flag -eq 1 ]]; then
-            local explanation=$(_zsh_ai_explain_command "$cmd")
-            if [[ -n "$explanation" ]] && [[ "$explanation" != "Error:"* ]]; then
-                _zsh_ai_format_with_explanation "$cmd" "$explanation"
+        # Check for dangerous commands first (highest priority)
+        if _zsh_ai_check_dangerous_command "$cmd"; then
+            # Safe command - proceed with explanation if requested
+            if [[ $explain_flag -eq 1 ]]; then
+                local explanation=$(_zsh_ai_explain_command "$cmd")
+                if [[ -n "$explanation" ]] && [[ "$explanation" != "Error:"* ]]; then
+                    _zsh_ai_format_with_explanation "$cmd" "$explanation"
+                else
+                    # If explanation failed, just return the command
+                    echo "$cmd"
+                fi
             else
-                # If explanation failed, just return the command
                 echo "$cmd"
             fi
         else
-            echo "$cmd"
+            # Dangerous command detected - add warning comment (ignore --e flag)
+            _zsh_ai_add_warning_comment "$cmd" "$_ZSH_AI_DANGER_WARNING"
         fi
         return 0
     else

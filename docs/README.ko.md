@@ -89,7 +89,7 @@ $ docker ps  # 실행 중인 모든 Docker 컨테이너를 상세 정보와 함�
 
 | 프로바이더 | API 키 변수 | 기본 모델 |
 |----------|-----------------|---------------|
-| Anthropic (기본값) | `ANTHROPIC_API_KEY` | claude-haiku-4-5 |
+| Anthropic | `ANTHROPIC_API_KEY` | claude-haiku-4-5 |
 | OpenAI | `OPENAI_API_KEY` | gpt-4o |
 | Gemini | `GEMINI_API_KEY` | gemini-2.5-flash |
 | Ollama | - (로컬) | llama3.2 |

@@ -52,15 +52,25 @@ Authorization: Bearer $OPENAI_API_KEY
 content-type: application/json
 HEADERS
 
-    response=$(curl -s --max-time "$ZSH_AI_TIMEOUT" --connect-timeout 10 \
+    response=$(curl -s -w "\n%{http_code}" --max-time "$ZSH_AI_TIMEOUT" --connect-timeout 10 \
         ${ZSH_AI_OPENAI_URL} \
         -H @"$header_file" \
         --data "$json_payload" 2>&1)
+    local curl_exit_code=$?
 
     rm -f "$header_file"
-    
-    if [[ $? -ne 0 ]]; then
-        _zsh_ai_error "openai" "Failed to connect to OpenAI API"
+
+    # Check curl exit code
+    if ! _zsh_ai_handle_curl_error "$curl_exit_code" "openai"; then
+        return 1
+    fi
+
+    # Extract HTTP status code (last line) and response body
+    local http_code="${response##*$'\n'}"
+    response="${response%$'\n'*}"
+
+    # Check HTTP status code
+    if ! _zsh_ai_handle_http_error "$http_code" "openai"; then
         return 1
     fi
 

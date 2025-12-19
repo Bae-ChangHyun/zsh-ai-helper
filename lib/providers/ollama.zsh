@@ -75,13 +75,23 @@ EOF
     json_payload=$(_zsh_ai_merge_extra_kwargs "$json_payload")
     
     # Call the API
-    response=$(curl -s --max-time "$ZSH_AI_TIMEOUT" --connect-timeout 10 \
+    response=$(curl -s -w "\n%{http_code}" --max-time "$ZSH_AI_TIMEOUT" --connect-timeout 10 \
         "${ZSH_AI_OLLAMA_URL}/api/generate" \
         --header "content-type: application/json" \
-        --data "$json_payload")
-    
-    if [[ $? -ne 0 ]]; then
-        _zsh_ai_error "ollama" "Failed to connect to Ollama. Is it running?"
+        --data "$json_payload" 2>&1)
+    local curl_exit_code=$?
+
+    # Check curl exit code
+    if ! _zsh_ai_handle_curl_error "$curl_exit_code" "ollama"; then
+        return 1
+    fi
+
+    # Extract HTTP status code (last line) and response body
+    local http_code="${response##*$'\n'}"
+    response="${response%$'\n'*}"
+
+    # Check HTTP status code
+    if ! _zsh_ai_handle_http_error "$http_code" "ollama"; then
         return 1
     fi
 

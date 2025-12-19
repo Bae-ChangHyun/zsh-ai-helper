@@ -50,13 +50,23 @@ EOF
     # Call the API
     # Note: Gemini API requires key in URL parameter (API design limitation)
     # This is the official Google API pattern and cannot be changed
-    response=$(curl -s --max-time "$ZSH_AI_TIMEOUT" --connect-timeout 10 \
+    response=$(curl -s -w "\n%{http_code}" --max-time "$ZSH_AI_TIMEOUT" --connect-timeout 10 \
         "https://generativelanguage.googleapis.com/v1beta/models/${ZSH_AI_GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}" \
         --header "content-type: application/json" \
         --data "$json_payload" 2>&1)
-    
-    if [[ $? -ne 0 ]]; then
-        _zsh_ai_error "gemini" "Failed to connect to Gemini API"
+    local curl_exit_code=$?
+
+    # Check curl exit code
+    if ! _zsh_ai_handle_curl_error "$curl_exit_code" "gemini"; then
+        return 1
+    fi
+
+    # Extract HTTP status code (last line) and response body
+    local http_code="${response##*$'\n'}"
+    response="${response%$'\n'*}"
+
+    # Check HTTP status code
+    if ! _zsh_ai_handle_http_error "$http_code" "gemini"; then
         return 1
     fi
 

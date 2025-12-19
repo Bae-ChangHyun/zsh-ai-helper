@@ -43,15 +43,25 @@ anthropic-version: 2023-06-01
 content-type: application/json
 HEADERS
 
-    response=$(curl -s --max-time "$ZSH_AI_TIMEOUT" --connect-timeout 10 \
+    response=$(curl -s -w "\n%{http_code}" --max-time "$ZSH_AI_TIMEOUT" --connect-timeout 10 \
         https://api.anthropic.com/v1/messages \
         -H @"$header_file" \
         --data "$json_payload" 2>&1)
+    local curl_exit_code=$?
 
     rm -f "$header_file"
-    
-    if [[ $? -ne 0 ]]; then
-        _zsh_ai_error "anthropic" "Failed to connect to Anthropic API"
+
+    # Check curl exit code
+    if ! _zsh_ai_handle_curl_error "$curl_exit_code" "anthropic"; then
+        return 1
+    fi
+
+    # Extract HTTP status code (last line) and response body
+    local http_code="${response##*$'\n'}"
+    response="${response%$'\n'*}"
+
+    # Check HTTP status code
+    if ! _zsh_ai_handle_http_error "$http_code" "anthropic"; then
         return 1
     fi
     
