@@ -64,8 +64,11 @@
   - [x] P1-3: 에러 메시지 표준화
     - utils.zsh: `_zsh_ai_error()` 공통 함수 추가
     - 모든 providers: 일관된 에러 포맷 적용 (`Error: [provider] message`)
-- [ ] Phase 3: Documentation Cleanup
-  - [ ] temp.md -> docs/ROADMAP.md 이관
+- [x] Phase 3: Documentation Cleanup ✅ **완료**
+  - [x] temp.md -> docs/ROADMAP.md 이관
+    - ROADMAP.md 생성: 향후 개선 사항 정리
+    - 완료된 Phase 1-2 항목 표시
+    - temp.md 삭제
 
 ## 메모
 - 각 Phase는 독립적인 커밋으로 관리
