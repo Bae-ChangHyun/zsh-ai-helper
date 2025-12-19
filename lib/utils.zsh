@@ -152,6 +152,22 @@ _zsh_ai_parse_llm_json() {
     return 0
 }
 
+# Debug logging function (only when ZSH_AI_DEV is set)
+_zsh_ai_debug_log() {
+    [[ -z "$ZSH_AI_DEV" ]] && return
+
+    local plugin_dir="${ZSH_AI_PLUGIN_DIR:-${0:A:h:h}}"
+    local log_file="${plugin_dir}/zsh-ai-debug.log"
+
+    # Get current timestamp
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+
+    # Append to log file
+    echo "" >> "$log_file"
+    echo "=== [$timestamp] ===" >> "$log_file"
+    echo "$@" >> "$log_file"
+}
+
 # Standardized error message formatter
 # Usage: _zsh_ai_error "provider_name" "error_message"
 _zsh_ai_error() {
@@ -278,8 +294,8 @@ _zsh_ai_parse_response() {
             fi
             return 1
         fi
-        # Clean up the response - remove newlines and trailing whitespace
-        result=$(echo "$result" | tr -d '\n' | sed 's/[[:space:]]*$//')
+        # Clean up the response - convert newlines to spaces, remove trailing whitespace
+        result=$(echo "$result" | tr '\n' ' ' | sed 's/[[:space:]]*$//; s/[[:space:]]\{2,\}/ /g')
         echo "$result"
     else
         # Fallback parsing without jq
@@ -453,6 +469,14 @@ _zsh_ai_execute_command() {
     # Get JSON response from LLM
     local llm_response=$(_zsh_ai_query "$clean_query" "$has_explanation")
 
+    # Debug logging (only if ZSH_AI_DEV is set)
+    if [[ -n "$ZSH_AI_DEV" ]]; then
+        _zsh_ai_debug_log "Query: $clean_query"
+        _zsh_ai_debug_log "Has Explanation: $has_explanation"
+        _zsh_ai_debug_log "LLM Response (raw):"
+        _zsh_ai_debug_log "$llm_response"
+    fi
+
     # Check for error in raw response
     if [[ "$llm_response" == "Error:"* ]]; then
         echo "$llm_response"
@@ -469,6 +493,13 @@ _zsh_ai_execute_command() {
     local cmd="$_ZSH_AI_CMD"
     local explanation="$_ZSH_AI_EXPLANATION"
     local warning="$_ZSH_AI_WARNING"
+
+    # Debug logging for parsed values
+    if [[ -n "$ZSH_AI_DEV" ]]; then
+        _zsh_ai_debug_log "Parsed Command: $cmd"
+        _zsh_ai_debug_log "Parsed Explanation: $explanation"
+        _zsh_ai_debug_log "Parsed Warning: $warning"
+    fi
 
     # Fallback safety check: If LLM didn't provide warning, check with regex patterns
     if [[ -z "$warning" ]]; then
