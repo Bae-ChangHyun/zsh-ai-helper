@@ -158,7 +158,7 @@ brew install jq
 
 ```bash
 # 1. 플러그인 디렉토리에 클론
-git clone https://github.com/Bae-ChangHyun/zsh-ai-helper ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-ai-helper
+git clone https://github.com/Changroro/zsh-ai-helper ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-ai-helper
 
 # 2. ~/.zshrc 파일 편집
 # plugins 배열에 zsh-ai-helper 추가
@@ -182,7 +182,7 @@ Oh My Zsh를 사용하지 않는 경우:
 
 ```bash
 # 1. 원하는 위치에 클론
-git clone https://github.com/Bae-ChangHyun/zsh-ai-helper ~/.zsh-ai-helper
+git clone https://github.com/Changroro/zsh-ai-helper ~/.zsh-ai-helper
 
 # 2. ~/.zshrc에 다음 라인 추가
 source ~/.zsh-ai-helper/zsh-ai-helper.plugin.zsh
@@ -362,9 +362,9 @@ Copyright (c) 2024-present Bae Chang Hyun
 <div align="center">
 
 **문의 및 이슈 리포트**<br/>
-[GitHub Issues](https://github.com/Bae-ChangHyun/zsh-ai-helper/issues)
+[GitHub Issues](https://github.com/Changroro/zsh-ai-helper/issues)
 
-Made with ❤️ by [Bae Chang Hyun](https://github.com/Bae-ChangHyun)<br/>
+Made with ❤️ by [Bae Chang Hyun](https://github.com/Changroro)<br/>
 Based on [zsh-ai](https://github.com/matheusml/zsh-ai)
 
 </div>

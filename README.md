@@ -158,7 +158,7 @@ brew install jq
 
 ```bash
 # 1. Clone to plugin directory
-git clone https://github.com/Bae-ChangHyun/zsh-ai-helper ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-ai-helper
+git clone https://github.com/Changroro/zsh-ai-helper ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-ai-helper
 
 # 2. Edit ~/.zshrc
 # Add zsh-ai-helper to plugins array
@@ -182,7 +182,7 @@ If you're not using Oh My Zsh:
 
 ```bash
 # 1. Clone to desired location
-git clone https://github.com/Bae-ChangHyun/zsh-ai-helper ~/.zsh-ai-helper
+git clone https://github.com/Changroro/zsh-ai-helper ~/.zsh-ai-helper
 
 # 2. Add the following line to ~/.zshrc
 source ~/.zsh-ai-helper/zsh-ai-helper.plugin.zsh
@@ -385,9 +385,9 @@ This project is based on [zsh-ai](https://github.com/matheusml/zsh-ai) by Matheu
 <div align="center">
 
 **Contact & Issue Reports**<br/>
-[GitHub Issues](https://github.com/Bae-ChangHyun/zsh-ai-helper/issues)
+[GitHub Issues](https://github.com/Changroro/zsh-ai-helper/issues)
 
-Made with ❤️ by [Bae Chang Hyun](https://github.com/Bae-ChangHyun)<br/>
+Made with ❤️ by [Bae Chang Hyun](https://github.com/Changroro)<br/>
 Based on [zsh-ai](https://github.com/matheusml/zsh-ai)
 
 </div>
